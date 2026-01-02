@@ -1,11 +1,12 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    const appContent = document.getElementById('app-content');
-    
-    // --- GLOBAL STATE ---
-    let currentLguId = localStorage.getItem('currentLguId');
+// --- GLOBAL STATE ---
+// Ensure localStorage is available (for testing environments)
+let currentLguId = (typeof localStorage !== 'undefined') ? localStorage.getItem('currentLguId') : null;
+let currentLoadId = 0; // Track the latest view load request
 
-    // --- LGU SELECTOR LOGIC ---
-    async function initLguSelector() {
+// --- FUNCTIONS ---
+
+async function initLguSelector() {
+    if (typeof document !== 'undefined') {
         const selector = document.getElementById('lgu-selector');
         const lgus = await getLguList();
 
@@ -31,9 +32,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             selector.innerHTML = '<option value="">No LGUs Found</option>';
         }
     }
+}
 
-    // --- ROUTING ---
-    async function handleRouting() {
+async function handleRouting() {
+    if (typeof location !== 'undefined') {
         const path = location.hash.slice(1) || '/dashboard';
         const parts = path.split('/');
         
@@ -113,24 +115,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                     viewPath = 'views/user-manual.html';
                     await loadContent(viewPath);
                 } else {
-                    appContent.innerHTML = '<h1>404 - Not Found</h1><p>The page you are looking for does not exist.</p>';
+                    const appContent = document.getElementById('app-content');
+                    if (appContent) {
+                        appContent.innerHTML = '<h1>404 - Not Found</h1><p>The page you are looking for does not exist.</p>';
+                    }
                     return;
                 }
             }
+}
         
             async function loadContent(path, onContentReady) {
+                const appContent = document.getElementById('app-content');
+                if (!appContent) return;
+                
+                const myLoadId = ++currentLoadId; // Increment and capture ID for this request
+
                 try {
-                    appContent.innerHTML = ''; // Clear existing content immediately
-                    const response = await fetch(path);
+                    // Fetch content first before clearing DOM
+                    const response = await fetch(`${path}?t=${Date.now()}`);
                     if (!response.ok) throw new Error(`Could not load ${path}`);
-                    appContent.innerHTML = await response.text();
+                    const html = await response.text();
+
+                    // If a newer request has started, ignore this one
+                    if (myLoadId !== currentLoadId) return;
+
+                    appContent.innerHTML = html;
+                    
                     if (onContentReady) {
-                        // Defer execution to ensure DOM is ready
-                        setTimeout(() => onContentReady(), 0); 
+                        await onContentReady(myLoadId); 
                     }
                 } catch (error) {
-                    console.error('Error loading view:', error);
-                    appContent.innerHTML = '<h1>Error</h1><p>Could not load page content.</p>';
+                    // Only show error if this is still the active request
+                    if (myLoadId === currentLoadId) {
+                        console.error('Error loading view:', error);
+                        appContent.innerHTML = '<h1>Error</h1><p>Could not load page content.</p>';
+                    }
                 }
             }
         
@@ -201,10 +220,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         alert('There was an error saving the LGU.');
                     }
                 });
-            }
+}
 
-            // --- RENDER FUNCTIONS (FSBD) ---
-            async function renderFsbdList() {
+
+async function renderFsbdList() {
                 const tableBody = document.getElementById('fsbd-table-body');
                 if (!tableBody) return;
                 
@@ -453,10 +472,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         alert('There was an error saving the data.');
                     }
                 });
-            }
+}
 
-            // --- RENDER FUNCTIONS (Consumption) ---
-            async function initConsumptionPage() {
+async function initConsumptionPage() {
                 // --- MECR (Electricity) Logic ---
                 const mecrBuildingSelect = document.getElementById('mecrBuildingSelect');
                 const mecrContentArea = document.getElementById('mecr-content-area');
@@ -560,10 +578,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         alert('Error saving fuel report.');
                     }
                 });
-            }
+}
 
-            // --- RENDER FUNCTIONS (RIO) ---
-            async function renderRioList() {
+async function renderRioList() {
                 const tableBody = document.getElementById('rio-table-body');
                 if (!tableBody) return;
 
@@ -600,9 +617,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No recommendations found.</td></tr>';
                 }
-            }
+}
 
-            async function initRioForm(docId = null) {
+async function initRioForm(docId = null) {
+                // Ensure docId is a string (handle loadContent passing a number)
+                if (typeof docId !== 'string') docId = null;
+
                 const form = document.getElementById('rio-form');
                 if (!form) return;
 
@@ -679,10 +699,321 @@ document.addEventListener('DOMContentLoaded', async () => {
                         alert('Error saving recommendation.');
                     }
                 });
-            }
 
-            // --- RENDER FUNCTIONS (PPA) ---
-            async function renderPpaList() {
+                // Inject Asset Summary to help identify RIOs
+                // Create a grid layout: Form on left, Reference Data on right
+                const formCard = form.closest('.bg-white') || form.parentElement;
+                
+                // Ensure form card fills the grid cell and matches height
+                formCard.classList.remove('max-w-lg', 'max-w-xl', 'max-w-2xl', 'max-w-3xl', 'mx-auto');
+                formCard.classList.add('w-full', 'h-full');
+                
+                // Also remove constraints from the parent container if it exists (e.g. the view wrapper)
+                if (formCard.parentElement && formCard.parentElement.id !== 'app-content') {
+                    formCard.parentElement.classList.remove('max-w-lg', 'max-w-xl', 'max-w-2xl', 'max-w-3xl', 'mx-auto');
+                    formCard.parentElement.classList.add('w-full');
+                }
+
+                // Create grid wrapper
+                const gridWrapper = document.createElement('div');
+                gridWrapper.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6 w-full';
+                
+                // Insert wrapper before formCard
+                if (formCard.parentNode) {
+                    formCard.parentNode.insertBefore(gridWrapper, formCard);
+                    gridWrapper.appendChild(formCard);
+                    
+                    // Create Reference Data Container
+                    const refContainer = document.createElement('div');
+                    gridWrapper.appendChild(refContainer);
+                    
+                    await renderRioContext(refContainer);
+                }
+}
+
+async function renderRioContext(container) {
+    container.innerHTML = '<div class="bg-white shadow rounded-lg p-6"><div class="text-center py-4 text-gray-500">Loading asset context...</div></div>';
+    
+    try {
+        if (!window.db) return;
+
+        const [buildings, vehicles, madeList, mecrSnap, mfcrSnap] = await Promise.all([
+            getFsbdList(),
+            getVehicleList(),
+            getMadeList(),
+            window.db.collection('mecr_reports').get(),
+            window.db.collection('mfcr_reports').get()
+        ]);
+
+        // Filter by LGU
+        let filteredBuildings = buildings;
+        let filteredVehicles = vehicles;
+        
+        if (currentLguId) {
+            filteredBuildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
+            filteredVehicles = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
+        }
+
+        const bldgIds = new Set(filteredBuildings.map(b => b.id));
+        const vehIds = new Set(filteredVehicles.map(v => v.id));
+
+        const filteredMade = madeList.filter(m => bldgIds.has(m.fsbdId));
+        
+        const mecr = mecrSnap.docs.map(d => d.data()).filter(r => bldgIds.has(r.fsbdId));
+        const mfcr = mfcrSnap.docs.map(d => d.data()).filter(r => vehIds.has(r.vehicleId));
+
+        // Helper to calculate stats
+        const calcStats = (reports, key) => {
+            if (!reports.length) return { avg: 0, mom: 0, yoy: 0, peak: 0 };
+            
+            // Sort by date
+            const sorted = [...reports].sort((a, b) => (a.reporting_year - b.reporting_year) || (a.reporting_month - b.reporting_month));
+            const vals = sorted.map(r => Number(r[key]) || 0);
+            
+            // Avg & Peak
+            const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+            const peak = Math.max(...vals);
+            
+            // MoM (Month-over-Month)
+            let momSum = 0, momCnt = 0;
+            for (let i = 1; i < vals.length; i++) {
+                if (vals[i-1] > 0) { momSum += (vals[i] - vals[i-1]) / vals[i-1]; momCnt++; }
+            }
+            
+            // YoY (Year-over-Year)
+            const byYear = {};
+            sorted.forEach(r => byYear[r.reporting_year] = (byYear[r.reporting_year] || 0) + (Number(r[key]) || 0));
+            const years = Object.keys(byYear).sort();
+            let yoySum = 0, yoyCnt = 0;
+            for (let i = 1; i < years.length; i++) {
+                const prev = byYear[years[i-1]];
+                const curr = byYear[years[i]];
+                if (prev > 0) { yoySum += (curr - prev) / prev; yoyCnt++; }
+            }
+            
+            return { avg, peak, mom: momCnt ? (momSum / momCnt) * 100 : 0, yoy: yoyCnt ? (yoySum / yoyCnt) * 100 : 0 };
+        };
+
+        const bldgStats = filteredBuildings.map(b => {
+            const stats = calcStats(mecr.filter(r => r.fsbdId === b.id), 'electricity_consumption_kwh');
+            return { id: b.id, name: b.name, ...stats };
+        }).sort((a, b) => b.avg - a.avg).slice(0, 5);
+
+        const vehStats = filteredVehicles.map(v => {
+            const stats = calcStats(mfcr.filter(r => r.vehicleId === v.id), 'fuel_consumed_liters');
+            return { id: v.id, plate: v.plate_number, ...stats };
+        }).sort((a, b) => b.avg - a.avg).slice(0, 5);
+
+        const renderTable = (items, nameKey, unit, type) => `
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-xs">
+                    <thead>
+                        <tr class="bg-gray-50 border-b">
+                            <th class="py-2 text-left text-gray-600">Asset</th>
+                            <th class="py-2 text-right text-gray-600">Avg (${unit})</th>
+                            <th class="py-2 text-right text-gray-600">Peak</th>
+                            <th class="py-2 text-right text-gray-600">MoM%</th>
+                            <th class="py-2 text-right text-gray-600">YoY%</th>
+                            <th class="py-2 text-center text-gray-600">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        ${items.map(i => `<tr><td class="py-2 font-medium text-gray-800">${i[nameKey]}</td><td class="py-2 text-right text-gray-600">${i.avg.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td class="py-2 text-right text-gray-600">${i.peak.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td class="py-2 text-right ${i.mom>0?'text-red-500':'text-green-500'}">${i.mom.toFixed(1)}%</td><td class="py-2 text-right ${i.yoy>0?'text-red-500':'text-green-500'}">${i.yoy.toFixed(1)}%</td><td class="py-2 text-center"><button class="text-blue-600 hover:text-blue-800 btn-details" data-id="${i.id}" data-type="${type}" title="View Details"><svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button></td></tr>`).join('') || '<tr><td colspan="6" class="py-2 text-center text-gray-500">No data</td></tr>'}
+                    </tbody>
+                </table>
+            </div>`;
+
+        // Render as a single card for the column
+        container.className = 'bg-white shadow rounded-lg p-6 border-t-4 border-blue-500 h-full';
+        container.innerHTML = `
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Reference Data</h3>
+            <div class="space-y-6">
+                <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">Top Energy Consuming Buildings</h4>
+                    ${renderTable(bldgStats, 'name', 'kWh', 'building')}
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">Top Fuel Consuming Vehicles</h4>
+                    ${renderTable(vehStats, 'plate', 'L', 'vehicle')}
+                </div>
+
+                <div class="pt-4 border-t border-gray-200">
+                    <h4 class="font-semibold text-gray-700 mb-2">Equipment Categories</h4>
+                    <div class="flex flex-wrap gap-2">
+                        ${[...new Set(filteredMade.map(m => m.energy_use_category))].map(c => `<span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">${c}</span>`).join('') || '<span class="text-sm text-gray-500">No equipment recorded</span>'}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add event listeners for details buttons
+        container.querySelectorAll('.btn-details').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const id = btn.dataset.id;
+                const type = btn.dataset.type;
+                
+                if (type === 'building') {
+                    const asset = filteredBuildings.find(b => b.id === id);
+                    const reports = mecr.filter(r => r.fsbdId === id);
+                    const assetMade = filteredMade.filter(m => m.fsbdId === id);
+                    openAssetDetailsModal(asset.name, reports, 'electricity_consumption_kwh', 'kWh', assetMade);
+                } else {
+                    const asset = filteredVehicles.find(v => v.id === id);
+                    const reports = mfcr.filter(r => r.vehicleId === id);
+                    openAssetDetailsModal(asset.plate_number, reports, 'fuel_consumed_liters', 'L');
+                }
+            });
+        });
+    } catch (error) {
+        console.error("Error rendering RIO context:", error);
+        container.innerHTML = '<div class="text-red-500">Failed to load context data.</div>';
+    }
+}
+
+function openAssetDetailsModal(title, reports, valueKey, unit, madeItems = []) {
+    // Sort reports descending for table, ascending for chart
+    const sortedDesc = [...reports].sort((a, b) => (b.reporting_year - a.reporting_year) || (b.reporting_month - a.reporting_month));
+    const sortedAsc = [...reports].sort((a, b) => (a.reporting_year - b.reporting_year) || (a.reporting_month - b.reporting_month));
+    
+    const values = sortedDesc.map(r => Number(r[valueKey]) || 0);
+    
+    // Stats
+    const total = values.reduce((a, b) => a + b, 0);
+    const avg = values.length ? total / values.length : 0;
+    const peak = Math.max(...values, 0);
+    const min = values.length ? Math.min(...values) : 0;
+    const count = values.length;
+
+    // Chart Generation (SVG)
+    const chartWidth = 500;
+    const chartHeight = 200;
+    const padding = 20;
+    const chartValues = sortedAsc.map(r => Number(r[valueKey]) || 0);
+    const maxVal = Math.max(...chartValues, 1);
+    
+    const points = chartValues.map((v, i) => {
+        const x = padding + (i / (chartValues.length - 1 || 1)) * (chartWidth - 2 * padding);
+        const y = chartHeight - padding - ((v / maxVal) * (chartHeight - 2 * padding));
+        return `${x},${y}`;
+    }).join(' ');
+
+    const chartSvg = chartValues.length > 0 ? `
+        <svg viewBox="0 0 ${chartWidth} ${chartHeight}" class="w-full h-48 border rounded bg-gray-50">
+            <polyline fill="none" stroke="#3B82F6" stroke-width="2" points="${points}" />
+            ${chartValues.map((v, i) => {
+                const x = padding + (i / (chartValues.length - 1 || 1)) * (chartWidth - 2 * padding);
+                const y = chartHeight - padding - ((v / maxVal) * (chartHeight - 2 * padding));
+                return `<circle cx="${x}" cy="${y}" r="3" fill="#2563EB"><title>${sortedAsc[i].reporting_year}-${sortedAsc[i].reporting_month}: ${v} ${unit}</title></circle>`;
+            }).join('')}
+        </svg>
+    ` : '<div class="h-48 flex items-center justify-center bg-gray-50 border rounded text-gray-500">No data available for chart</div>';
+
+    const madeTable = (madeItems && madeItems.length > 0) ? `
+        <div class="mt-6 pt-4 border-t border-gray-200">
+            <h4 class="font-semibold text-gray-700 mb-2">Equipment Details (MADE)</h4>
+            <div class="overflow-x-auto border rounded-lg">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Rating (kW)</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hrs/Day</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${madeItems.map(m => `
+                            <tr>
+                                <td class="px-4 py-2 whitespace-nowrap text-gray-700">${m.description_of_equipment || '-'}</td>
+                                <td class="px-4 py-2 whitespace-nowrap text-gray-600">${m.energy_use_category || '-'}</td>
+                                <td class="px-4 py-2 whitespace-nowrap text-gray-600">${m.location || '-'}</td>
+                                <td class="px-4 py-2 whitespace-nowrap text-right text-gray-600 font-mono">${m.power_rating_kw || '-'}</td>
+                                <td class="px-4 py-2 whitespace-nowrap text-right text-gray-600 font-mono">${m.time_of_use_hours_per_day || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    ` : '';
+
+    // Modal HTML
+    const modal = document.createElement('div');
+    modal.id = 'asset-detail-modal';
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center';
+    modal.innerHTML = `
+        <div class="relative p-6 border w-full max-w-4xl shadow-lg rounded-lg bg-white m-4">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="text-xl font-bold text-gray-800">Details: ${title}</h3>
+                <button class="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none" onclick="document.getElementById('asset-detail-modal').remove()">&times;</button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase">Total Consumption</p>
+                            <p class="text-lg font-bold text-blue-700">${total.toLocaleString()} ${unit}</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase">Average Monthly</p>
+                            <p class="text-lg font-bold text-green-700">${avg.toLocaleString(undefined, {maximumFractionDigits: 1})} ${unit}</p>
+                        </div>
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase">Peak Monthly</p>
+                            <p class="text-lg font-bold text-yellow-700">${peak.toLocaleString()} ${unit}</p>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase">Records Count</p>
+                            <p class="text-lg font-bold text-purple-700">${count}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">Consumption Trend</h4>
+                        ${chartSvg}
+                        <p class="text-xs text-gray-500 mt-1 text-center">Hover over points for details</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col h-96">
+                    <h4 class="font-semibold text-gray-700 mb-2">History</h4>
+                    <div class="overflow-y-auto flex-1 border rounded-lg">
+                        <table class="min-w-full text-sm leading-normal">
+                            <thead>
+                                <tr class="bg-gray-100 sticky top-0">
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                                    <th class="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Consumption (${unit})</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                ${sortedDesc.map(r => `
+                                    <tr>
+                                        <td class="px-4 py-2 whitespace-no-wrap text-gray-700">${r.reporting_year}-${String(r.reporting_month).padStart(2,'0')}</td>
+                                        <td class="px-4 py-2 whitespace-no-wrap text-right font-mono text-gray-800">${(Number(r[valueKey])||0).toLocaleString()}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="2" class="px-4 py-2 text-center text-gray-500">No records found</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            ${madeTable}
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close on click outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+async function renderPpaList() {
                 const tableBody = document.getElementById('ppa-table-body');
                 if (!tableBody) return;
 
@@ -714,9 +1045,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No projects found.</td></tr>';
                 }
-            }
+}
 
-            async function initPpaForm(docId = null) {
+async function initPpaForm(docId = null) {
                 const form = document.getElementById('ppa-form');
                 if (!form) return;
 
@@ -738,6 +1069,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 riosField.innerHTML = rios.map(rio => `<option value="${rio.id}">${rio.proposed_action}</option>`).join('');
 
+                // Layout adjustment for Side-by-Side View (Form + RIO Details)
+                const formCard = form.closest('.bg-white') || form.parentElement;
+                formCard.classList.remove('max-w-3xl', 'mx-auto');
+                formCard.classList.add('w-full', 'h-full');
+
+                // Create Grid Wrapper
+                const gridWrapper = document.createElement('div');
+                gridWrapper.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6 w-full';
+
+                if (formCard.parentNode) {
+                    formCard.parentNode.insertBefore(gridWrapper, formCard);
+                    gridWrapper.appendChild(formCard);
+                }
+
+                // Create Details Card
+                const detailsCard = document.createElement('div');
+                detailsCard.className = 'bg-white shadow-md rounded-lg overflow-hidden h-full border-t-4 border-indigo-500 flex flex-col';
+                detailsCard.innerHTML = `
+                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-800">Selected RIO Details</h2>
+                    </div>
+                    <div class="p-6 space-y-4 overflow-y-auto flex-1" id="rio-details-content">
+                        <p class="text-gray-500 text-center italic">Select one or more RIOs to view details.</p>
+                    </div>
+                `;
+                gridWrapper.appendChild(detailsCard);
+
+                const detailsContent = detailsCard.querySelector('#rio-details-content');
+
+                const updateRioDetails = () => {
+                    const selectedOptions = Array.from(riosField.selectedOptions);
+                    const selectedIds = new Set(selectedOptions.map(o => o.value));
+                    const selectedRios = rios.filter(r => selectedIds.has(r.id));
+
+                    if (selectedRios.length === 0) {
+                        detailsContent.innerHTML = '<p class="text-gray-500 text-center italic">Select one or more RIOs to view details.</p>';
+                        return;
+                    }
+
+                    detailsContent.innerHTML = selectedRios.map(rio => `
+                        <div class="border rounded p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-bold px-2 py-1 rounded ${rio.priority === 'High' ? 'bg-red-100 text-red-800' : (rio.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800')}">${rio.priority}</span>
+                                <span class="text-xs text-gray-500 border px-1 rounded">${rio.status}</span>
+                            </div>
+                            <p class="font-medium text-gray-800 mb-2 text-sm">${rio.proposed_action}</p>
+                            <div class="text-xs text-gray-600 grid grid-cols-2 gap-2 border-t pt-2 mt-2">
+                                <div><span class="block text-gray-400">Est. Cost</span> ₱${(rio.estimated_cost_php || 0).toLocaleString()}</div>
+                                <div><span class="block text-gray-400">Est. Savings</span> ₱${(rio.estimated_savings_php || 0).toLocaleString()}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                };
+
+                riosField.addEventListener('change', updateRioDetails);
+
                 if (docId) {
                     // EDIT MODE
                     const data = await getPpaById(docId);
@@ -754,6 +1141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 }
                             });
                         }
+                        updateRioDetails();
                     }
                 }
 
@@ -784,11 +1172,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         alert('Error saving project.');
                     }
                 });
-            }
+}
 
-            // --- DASHBOARD FUNCTIONS ---
-            async function renderDashboard() {
-                if (!window.db) return;
+async function renderDashboard(loadId) {
+                if (!window.db) {
+                    console.error("Firestore is not initialized.");
+                    return;
+                }
 
                 try {
                     let [buildings, vehicles, rios, ppas, mecrResults, mfcrResults] = await Promise.all([
@@ -800,6 +1190,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         db.collection('mfcr_reports').get().catch(e => { console.error(e); return { docs: [] }; }),
                     ]);
                     
+                    // Check if this render is still valid for the current view
+                    if (loadId && loadId !== currentLoadId) return;
+
                     let mecrReports = mecrResults.docs.map(doc => doc.data());
                     let mfcrReports = mfcrResults.docs.map(doc => doc.data());
 
@@ -840,59 +1233,59 @@ document.addEventListener('DOMContentLoaded', async () => {
                     setSafeText('stats-total-savings', '₱' + totalSavings.toLocaleString());
                     setSafeText('stats-total-investment', '₱' + totalInvestment.toLocaleString());
                     
-                    // Process and Render Charts
-                    renderConsumptionChart('electricityChart', mecrReports, 'electricity_consumption_kwh', 'Electricity (kWh)');
-                    renderConsumptionChart('fuelChart', mfcrReports, 'fuel_consumed_liters', 'Fuel (Liters)');
+                    // Render Recent Consumption Table
+                    const buildingMap = buildings.reduce((acc, b) => ({...acc, [b.id]: b.name}), {});
+                    const vehicleMap = vehicles.reduce((acc, v) => ({...acc, [v.id]: v.plate_number}), {});
+
+                    const allReports = [
+                        ...mecrReports.map(r => ({
+                            date: `${r.reporting_year}-${String(r.reporting_month).padStart(2, '0')}`,
+                            year: r.reporting_year,
+                            month: r.reporting_month,
+                            type: 'Electricity',
+                            asset: buildingMap[r.fsbdId] || 'Unknown Building',
+                            amount: `${Number(r.electricity_consumption_kwh).toLocaleString()} kWh`,
+                            colorClass: 'text-indigo-900 bg-indigo-200'
+                        })),
+                        ...mfcrReports.map(r => ({
+                            date: `${r.reporting_year}-${String(r.reporting_month).padStart(2, '0')}`,
+                            year: r.reporting_year,
+                            month: r.reporting_month,
+                            type: 'Fuel',
+                            asset: vehicleMap[r.vehicleId] || 'Unknown Vehicle',
+                            amount: `${Number(r.fuel_consumed_liters).toLocaleString()} L`,
+                            colorClass: 'text-teal-900 bg-teal-200'
+                        }))
+                    ];
+
+                    // Sort by date descending
+                    allReports.sort((a, b) => (b.year - a.year) || (b.month - a.month));
+
+                    const recentActivity = allReports.slice(0, 5);
+                    const tableBody = document.getElementById('dashboard-recent-consumption-body');
+                    
+                    if (tableBody) {
+                        tableBody.innerHTML = recentActivity.length > 0 ? recentActivity.map(r => `
+                            <tr>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.date}</td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.asset}</td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                    <span class="relative inline-block px-3 py-1 font-semibold ${r.colorClass.split(' ')[0]} leading-tight">
+                                        <span aria-hidden class="absolute inset-0 ${r.colorClass.split(' ')[1]} opacity-50 rounded-full"></span>
+                                        <span class="relative">${r.type}</span>
+                                    </span>
+                                </td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.amount}</td>
+                            </tr>
+                        `).join('') : '<tr><td colspan="4" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">No recent reports found.</td></tr>';
+                    }
+
                 } catch (error) {
                     console.error("Error rendering dashboard:", error);
                 }
-            }
+}
 
-            function renderConsumptionChart(canvasId, reports, dataKey, label) {
-                if (typeof Chart === 'undefined') return;
-                const ctx = document.getElementById(canvasId);
-                if (!ctx) return;
-
-                const monthlyData = reports.reduce((acc, report) => {
-                    const month = `${report.reporting_year}-${String(report.reporting_month).padStart(2, '0')}`;
-                    acc[month] = (acc[month] || 0) + report[dataKey];
-                    return acc;
-                }, {});
-
-                const sortedMonths = Object.keys(monthlyData).sort();
-                const chartData = sortedMonths.map(month => monthlyData[month]);
-
-                // Destroy existing chart instance if it exists
-                const existingChart = Chart.getChart(ctx);
-                if (existingChart) {
-                    existingChart.destroy();
-                }
-
-                new Chart(ctx.getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: sortedMonths,
-                        datasets: [{
-                            label: label,
-                            data: chartData,
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            fill: true,
-                            tension: 0.1
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            }
-
-            // --- ADMIN FUNCTIONS ---
-            async function renderAdmin() {
+async function renderAdmin() {
                 // Fetch all data
                 const [lgus, fsbds, vehicles, made, mecr, mfcr, rios, ppas] = await Promise.all([
                     getLguList(), getFsbdList(), getVehicleList(), getMadeList(),
@@ -995,7 +1388,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         
             // --- INITIALIZATION ---
-            window.addEventListener('hashchange', handleRouting);
-            await initLguSelector(); // Initialize LGU selector before routing
-            handleRouting(); // Initial load
-        });
+            document.addEventListener('DOMContentLoaded', async () => {
+                window.addEventListener('hashchange', handleRouting);
+                await initLguSelector(); // Initialize LGU selector before routing
+                handleRouting(); // Initial load
+            });
+
+            // Export for testing
+            if (typeof module !== 'undefined' && module.exports) {
+                module.exports = {
+                    initLguSelector,
+                    handleRouting,
+                    renderDashboard,
+                    renderLguList,
+                    initLguForm,
+                    renderFsbdList,
+                    initFsbdForm,
+                    renderVehicleList,
+                    initVehicleForm,
+                    renderMadeList,
+                    initMadeForm,
+                    initConsumptionPage,
+                    renderRioList,
+                    initRioForm,
+                    renderPpaList,
+                    initPpaForm,
+                    renderAdmin
+                };
+            }

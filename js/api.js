@@ -404,6 +404,20 @@ async function deleteMade(docId) {
     }
 }
 
+// Export for Node.js testing environment
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        getLguList, createLgu, updateLgu, getLguById, deleteLgu,
+        getFsbdList, createFsbd, updateFsbd, getFsbdById, deleteFsbd,
+        getVehicleList, createVehicle, updateVehicle, getVehicleById, deleteVehicle,
+        getMadeList, createMade, updateMade, getMadeById, deleteMade,
+        getMecrReports, createMecrReport, deleteMecrReport,
+        getMfcrReports, createMfcrReport, deleteMfcrReport,
+        getRioList, createRio, updateRio, getRioById, deleteRio,
+        getPpaList, createPpa, updatePpa, getPpaById, deletePpa
+    };
+}
+
 // --- Consumption Report Functions (MECR) ---
 
 /**
