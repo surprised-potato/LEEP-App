@@ -23,8 +23,8 @@
                 <form id="mecr-form" class="mb-6 bg-gray-50 p-4 rounded border border-gray-200">
                     <h3 class="font-bold text-gray-700 mb-3">Add Monthly Report</h3>
                     <div class="grid grid-cols-3 gap-2 mb-3">
-                        <input type="number" id="mecr-year" placeholder="Year" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <input type="number" id="mecr-month" placeholder="Month (1-12)" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required min="1" max="12">
+                        <select id="mecr-year" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required></select>
+                        <select id="mecr-month" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required></select>
                         <input type="number" id="mecr-kwh" placeholder="kWh" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                     </div>
                     <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Add Report</button>
@@ -63,8 +63,8 @@
                 <form id="mfcr-form" class="mb-6 bg-gray-50 p-4 rounded border border-gray-200">
                     <h3 class="font-bold text-gray-700 mb-3">Add Monthly Report</h3>
                     <div class="grid grid-cols-2 gap-2 mb-3">
-                        <input type="number" id="mfcr-year" placeholder="Year" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" required>
-                        <input type="number" id="mfcr-month" placeholder="Month" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" required min="1" max="12">
+                        <select id="mfcr-year" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" required></select>
+                        <select id="mfcr-month" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" required></select>
                     </div>
                     <div class="grid grid-cols-2 gap-2 mb-3">
                         <input type="number" id="mfcr-liters" placeholder="Liters" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" required>

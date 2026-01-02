@@ -19,7 +19,11 @@ The LGU EEC Platform is a web-based application designed to assist Local Governm
 * **Consumption Tracking**: Monthly logging of Electricity (kWh) and Fuel (Liters).
 * **Analysis**: Automatic/Manual identification of Significant Energy Use (SEU).
 * **Action Planning**: Creation of Recommendations for Improvement (RIO) and tracking of Programs and Projects (PPA).
+* **Decision Support**: Contextual analytics (Top Consumers, MoM/YoY trends) displayed during RIO creation to aid in identifying opportunities.
+* **User Guidance**: Integrated interactive User Manual.
+* **User Authentication & RBAC**: Secure access with roles. New users register with a 'Pending' status and must select a target LGU. Access is restricted until a System/LGU Admin assigns a specific role.
 * **Future Implementation**: Document uploads for verification (e.g., electricity bills, fuel receipts, agency logos) will be added in a future version.
+* **One-Time Setup**: A special, non-production page (`setup.html`) to create the initial System Administrator account. This page should be excluded from version control.
 
 ### 4. Data Model (Detailed Firestore Schema)
 
@@ -115,8 +119,32 @@ The LGU EEC Platform is a web-based application designed to assist Local Governm
 * `estimated_cost_php`: (Number), `actual_cost_php`: (Number)
 * `status`: (String) 'Planned', 'Ongoing', 'Completed'.
 
+#### 4.10 `users` (User Profiles)
+
+* `uid`: (String) Firebase Auth User ID.
+* `email`: (String)
+* `displayName`: (String)
+* `role`: (String) 'System Admin', 'LGU Admin', 'LGU EEC Officer', 'Auditor', 'LGU Planner', or 'Pending' (Default).
+* `assignedLguId`: (String) Reference to `lgus`. Selected during registration.
+* `createdAt`: (Timestamp)
+
 ### 5. Non-Functional Requirements
 
 * **Security Rules**: For initial development, Firestore rules will be open, allowing read/write access without authentication. This is not secure and must be addressed before any production deployment.
 * **Offline Support**: Enable Firestore persistence for data entry in areas with poor connectivity.
 * **Performance**: Use indexes for common queries to ensure fast data retrieval.
+
+### 6. User Interface Guidelines
+
+* **Layout**: Use responsive grid layouts. Forms should utilize side-by-side views (Form + Context) on larger screens.
+* **Navigation**: Collapsible sidebar navigation with a persistent top header showing the current LGU context.
+* **Styling**: Consistent "Hero Headers" with gradient backgrounds (Blue to Indigo) and subtle animations (shimmer) for main page titles.
+
+### 7. User Roles & Permissions
+
+* **System Admin**: Manages the entire system (All LGUs, Users, and Data).
+* **LGU Admin**: Manages specific LGU scope (Users within LGU, all LGU data).
+* **LGU EEC Officer**: Can encode and view data for FSBD, Vehicles, MADE, and Consumptions for their assigned LGU.
+* **Auditor**: Can view data across all LGUs but can only create/edit RIOs.
+* **LGU Planner**: Can view data and RIOs for their assigned LGU. Can create and manage Projects (PPAs).
+* **Pending User**: Default state upon registration. No access to system features until a Role is assigned by an Admin.
