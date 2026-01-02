@@ -8,6 +8,7 @@ let currentLoadId = 0; // Track the latest view load request
 async function initLguSelector() {
     if (typeof document !== 'undefined') {
         const selector = document.getElementById('lgu-selector');
+        const headerLguName = document.getElementById('header-lgu-name');
         const lgus = await getLguList();
 
         if (lgus.length > 0) {
@@ -23,13 +24,23 @@ async function initLguSelector() {
                 selector.value = currentLguId;
             }
 
+            const updateHeaderText = () => {
+                if (headerLguName) {
+                    const selected = lgus.find(l => l.id === currentLguId);
+                    headerLguName.textContent = selected ? selected.name : 'Select LGU';
+                }
+            };
+            updateHeaderText();
+
             selector.addEventListener('change', (e) => {
                 currentLguId = e.target.value;
                 localStorage.setItem('currentLguId', currentLguId);
+                updateHeaderText();
                 handleRouting(); // Reload current view with new filter
             });
         } else {
             selector.innerHTML = '<option value="">No LGUs Found</option>';
+            if (headerLguName) headerLguName.textContent = 'No LGUs Found';
         }
     }
 }
@@ -1242,6 +1253,10 @@ async function renderDashboard(loadId) {
                         
                         mecrReports = mecrReports.filter(r => allowedBldgIds.has(r.fsbdId));
                         mfcrReports = mfcrReports.filter(r => allowedVehicleIds.has(r.vehicleId));
+
+                        // Filter PPAs based on filtered RIOs
+                        const allowedRioIds = new Set(rios.map(r => r.id));
+                        ppas = ppas.filter(ppa => ppa.relatedRioIds && ppa.relatedRioIds.some(id => allowedRioIds.has(id)));
                     }
 
                     // Calculate additional KPIs

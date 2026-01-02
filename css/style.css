@@ -2,8 +2,29 @@
 .hero-header {
     background: linear-gradient(to right, #2563eb, #4338ca); /* blue-600 to indigo-700 */
     color: white;
+    position: relative;
+    overflow: hidden;
 }
 
 .hero-header h1, .hero-header h2, .hero-header h3, .hero-header button {
     color: white !important;
+}
+
+.hero-header::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+    transform: skewX(-20deg) translateX(-150%);
+    animation: shimmer 6s infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% { transform: skewX(-20deg) translateX(-150%); }
+    20% { transform: skewX(-20deg) translateX(150%); }
+    100% { transform: skewX(-20deg) translateX(150%); }
 }
