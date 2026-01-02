@@ -109,6 +109,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else if (path === '/admin') {
                     viewPath = 'views/admin.html';
                     await loadContent(viewPath, renderAdmin);
+                } else if (path === '/manual') {
+                    viewPath = 'views/user-manual.html';
+                    await loadContent(viewPath);
                 } else {
                     appContent.innerHTML = '<h1>404 - Not Found</h1><p>The page you are looking for does not exist.</p>';
                     return;
@@ -208,7 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let fsbds = await getFsbdList();
                 
                 // Filter by Current LGU
-                if (currentLguId) fsbds = fsbds.filter(f => f.lguId === currentLguId);
+                if (currentLguId) fsbds = fsbds.filter(f => f.lguId === currentLguId || !f.lguId);
         
                 if (fsbds.length > 0) {
                     tableBody.innerHTML = fsbds.map(fsbd => `
@@ -287,7 +290,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let vehicles = await getVehicleList();
 
                 // Filter by Current LGU
-                if (currentLguId) vehicles = vehicles.filter(v => v.lguId === currentLguId);
+                if (currentLguId) vehicles = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
         
                 if (vehicles.length > 0) {
                     tableBody.innerHTML = vehicles.map(vehicle => `
@@ -366,7 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let buildings = await getFsbdList();
 
                 // Filter buildings by LGU, then filter MADE items that belong to those buildings
-                if (currentLguId) buildings = buildings.filter(b => b.lguId === currentLguId);
+                if (currentLguId) buildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
                 const allowedBuildingIds = new Set(buildings.map(b => b.id));
                 madeList = madeList.filter(m => allowedBuildingIds.has(m.fsbdId));
 
@@ -461,7 +464,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const mecrForm = document.getElementById('mecr-form');
 
                 const buildings = await getFsbdList();
-                const filteredBuildings = currentLguId ? buildings.filter(b => b.lguId === currentLguId) : buildings;
+                const filteredBuildings = currentLguId ? buildings.filter(b => b.lguId === currentLguId || !b.lguId) : buildings;
                 mecrBuildingSelect.innerHTML += filteredBuildings.map(bldg => `<option value="${bldg.id}">${bldg.name}</option>`).join('');
 
                 async function renderMecrReports(buildingId) {
@@ -508,7 +511,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const mfcrForm = document.getElementById('mfcr-form');
 
                 const vehicles = await getVehicleList();
-                const filteredVehicles = currentLguId ? vehicles.filter(v => v.lguId === currentLguId) : vehicles;
+                const filteredVehicles = currentLguId ? vehicles.filter(v => v.lguId === currentLguId || !v.lguId) : vehicles;
                 mfcrVehicleSelect.innerHTML += filteredVehicles.map(v => `<option value="${v.id}">${v.plate_number} - ${v.make} ${v.model}</option>`).join('');
                 
                 async function renderMfcrReports(vehicleId) {
@@ -559,8 +562,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 // Filter Assets by LGU
                 if (currentLguId) {
-                    buildings = buildings.filter(b => b.lguId === currentLguId);
-                    vehicles = vehicles.filter(v => v.lguId === currentLguId);
+                    buildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
+                    vehicles = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
                 }
 
                 const allowedBuildingIds = new Set(buildings.map(b => b.id));
@@ -609,12 +612,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     assetIdField.disabled = true;
                     if (type === 'building') {
                         const buildings = await getFsbdList();
-                        const filtered = currentLguId ? buildings.filter(b => b.lguId === currentLguId) : buildings;
+                        const filtered = currentLguId ? buildings.filter(b => b.lguId === currentLguId || !b.lguId) : buildings;
                         assetIdField.innerHTML = filtered.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
                         assetIdField.disabled = false;
                     } else if (type === 'vehicle') {
                         const vehicles = await getVehicleList();
-                        const filtered = currentLguId ? vehicles.filter(v => v.lguId === currentLguId) : vehicles;
+                        const filtered = currentLguId ? vehicles.filter(v => v.lguId === currentLguId || !v.lguId) : vehicles;
                         assetIdField.innerHTML = filtered.map(v => `<option value="${v.id}">${v.plate_number}</option>`).join('');
                         assetIdField.disabled = false;
                     } else {
