@@ -814,11 +814,11 @@ async function renderRioContext(container) {
                             <th class="py-2 text-right text-gray-600">Peak</th>
                             <th class="py-2 text-right text-gray-600">MoM%</th>
                             <th class="py-2 text-right text-gray-600">YoY%</th>
-                            <th class="py-2 text-center text-gray-600">Action</th>
+                            <th class="py-2 text-center text-gray-600">View Details</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        ${items.map(i => `<tr><td class="py-2 font-medium text-gray-800">${i[nameKey]}</td><td class="py-2 text-right text-gray-600">${i.avg.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td class="py-2 text-right text-gray-600">${i.peak.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td class="py-2 text-right ${i.mom>0?'text-red-500':'text-green-500'}">${i.mom.toFixed(1)}%</td><td class="py-2 text-right ${i.yoy>0?'text-red-500':'text-green-500'}">${i.yoy.toFixed(1)}%</td><td class="py-2 text-center"><button class="text-blue-600 hover:text-blue-800 btn-details" data-id="${i.id}" data-type="${type}" title="View Details"><svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button></td></tr>`).join('') || '<tr><td colspan="6" class="py-2 text-center text-gray-500">No data</td></tr>'}
+                        ${items.map(i => `<tr><td class="py-2 font-medium text-gray-800">${i[nameKey]}</td><td class="py-2 text-right text-gray-600">${i.avg.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td class="py-2 text-right text-gray-600">${i.peak.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td class="py-2 text-right ${i.mom>0?'text-red-500':'text-green-500'}">${i.mom.toFixed(1)}%</td><td class="py-2 text-right ${i.yoy>0?'text-red-500':'text-green-500'}">${i.yoy.toFixed(1)}%</td><td class="py-2 text-center"><button class="text-blue-600 hover:text-blue-800 btn-details" data-id="${i.id}" data-type="${type}" title="View Details"><svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></button></td></tr>`).join('') || '<tr><td colspan="6" class="py-2 text-center text-gray-500">No data</td></tr>'}
                     </tbody>
                 </table>
             </div>`;
@@ -945,12 +945,13 @@ function openAssetDetailsModal(title, reports, valueKey, unit, madeItems = []) {
     modal.id = 'asset-detail-modal';
     modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center';
     modal.innerHTML = `
-        <div class="relative p-6 border w-full max-w-4xl shadow-lg rounded-lg bg-white m-4">
-            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h3 class="text-xl font-bold text-gray-800">Details: ${title}</h3>
-                <button class="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none" onclick="document.getElementById('asset-detail-modal').remove()">&times;</button>
+        <div class="relative border w-full max-w-4xl shadow-lg rounded-lg bg-white m-4 overflow-hidden">
+            <div class="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-indigo-700">
+                <h3 class="text-xl font-bold text-white">Details: ${title}</h3>
+                <button class="text-white hover:text-gray-200 text-2xl font-bold leading-none" onclick="document.getElementById('asset-detail-modal').remove()">&times;</button>
             </div>
             
+            <div class="p-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 gap-4">
@@ -1002,6 +1003,7 @@ function openAssetDetailsModal(title, reports, valueKey, unit, madeItems = []) {
                 </div>
             </div>
             ${madeTable}
+            </div>
         </div>
     `;
     
@@ -1087,8 +1089,8 @@ async function initPpaForm(docId = null) {
                 const detailsCard = document.createElement('div');
                 detailsCard.className = 'bg-white shadow-md rounded-lg overflow-hidden h-full border-t-4 border-indigo-500 flex flex-col';
                 detailsCard.innerHTML = `
-                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-xl font-bold text-gray-800">Selected RIO Details</h2>
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-white">Selected RIO Details</h2>
                     </div>
                     <div class="p-6 space-y-4 overflow-y-auto flex-1" id="rio-details-content">
                         <p class="text-gray-500 text-center italic">Select one or more RIOs to view details.</p>
