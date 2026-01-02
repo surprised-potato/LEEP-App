@@ -144,11 +144,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (lgus.length > 0) {
                     tableBody.innerHTML = lgus.map(lgu => `
                         <tr>
-                            <td>${lgu.name}</td>
-                            <td>${lgu.region || ''}</td>
-                            <td>${lgu.province || ''}</td>
-                            <td>
-                                <a href="#/lgus/edit/${lgu.id}" class="btn btn-sm btn-warning">Edit</a>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${lgu.name}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${lgu.region || ''}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${lgu.province || ''}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <a href="#/lgus/edit/${lgu.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
                             </td>
                         </tr>
                     `).join('');
@@ -216,11 +216,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (fsbds.length > 0) {
                     tableBody.innerHTML = fsbds.map(fsbd => `
                         <tr>
-                            <td>${fsbd.name}</td>
-                            <td>${fsbd.fsbd_type}</td>
-                            <td>${fsbd.address}</td>
-                            <td>
-                                <a href="#/fsbds/edit/${fsbd.id}" class="btn btn-sm btn-warning">Edit</a>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${fsbd.name}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${fsbd.fsbd_type}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${fsbd.address}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <a href="#/fsbds/edit/${fsbd.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
                                 <!-- Delete button can be added here -->
                             </td>
                         </tr>
@@ -295,12 +295,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (vehicles.length > 0) {
                     tableBody.innerHTML = vehicles.map(vehicle => `
                         <tr>
-                            <td>${vehicle.plate_number}</td>
-                            <td>${vehicle.make}</td>
-                            <td>${vehicle.model}</td>
-                            <td>${vehicle.fuel_type}</td>
-                            <td>
-                                <a href="#/vehicles/edit/${vehicle.id}" class="btn btn-sm btn-warning">Edit</a>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${vehicle.plate_number}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${vehicle.make}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${vehicle.model}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${vehicle.fuel_type}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <a href="#/vehicles/edit/${vehicle.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
                             </td>
                         </tr>
                     `).join('');
@@ -381,12 +381,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (madeList.length > 0) {
                     tableBody.innerHTML = madeList.map(made => `
                         <tr>
-                            <td>${made.description_of_equipment}</td>
-                            <td>${made.energy_use_category}</td>
-                            <td>${made.location}</td>
-                            <td>${buildingMap[made.fsbdId] || 'N/A'}</td>
-                            <td>
-                                <a href="#/made/edit/${made.id}" class="btn btn-sm btn-warning">Edit</a>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${made.description_of_equipment}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${made.energy_use_category}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${made.location}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${buildingMap[made.fsbdId] || 'N/A'}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <a href="#/made/edit/${made.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
                             </td>
                         </tr>
                     `).join('');
@@ -579,12 +579,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (rios.length > 0) {
                     tableBody.innerHTML = rios.map(rio => `
                         <tr>
-                            <td>${rio.proposed_action}</td>
-                            <td>${assetMap[rio.fsbdId || rio.vehicleId] || 'N/A'}</td>
-                            <td>${rio.priority}</td>
-                            <td>${rio.status}</td>
-                            <td>
-                                <a href="#/rios/edit/${rio.id}" class="btn btn-sm btn-warning">Edit</a>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.proposed_action}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${assetMap[rio.fsbdId || rio.vehicleId] || 'N/A'}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.priority}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.status}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <a href="#/rios/edit/${rio.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
                             </td>
                         </tr>
                     `).join('');
@@ -693,12 +693,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (ppas.length > 0) {
                     tableBody.innerHTML = ppas.map(ppa => `
                         <tr>
-                            <td>${ppa.project_name}</td>
-                            <td>${ppa.status}</td>
-                            <td>${ppa.estimated_cost_php || 'N/A'}</td>
-                            <td>${ppa.actual_cost_php || 'N/A'}</td>
-                            <td>
-                                <a href="#/ppas/edit/${ppa.id}" class="btn btn-sm btn-warning">Edit</a>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.project_name}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.status}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.estimated_cost_php || 'N/A'}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.actual_cost_php || 'N/A'}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <a href="#/ppas/edit/${ppa.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
                             </td>
                         </tr>
                     `).join('');
@@ -869,6 +869,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     getRioList(), getPpaList()
                 ]);
 
+                // --- TAB LOGIC ---
+                const tabs = document.querySelectorAll('.tab-btn');
+                const contents = document.querySelectorAll('.tab-content-item');
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        tabs.forEach(t => t.classList.replace('border-blue-500', 'border-transparent'));
+                        tabs.forEach(t => t.classList.replace('text-blue-600', 'text-gray-500'));
+                        tab.classList.replace('border-transparent', 'border-blue-500');
+                        tab.classList.replace('text-gray-500', 'text-blue-600');
+                        contents.forEach(c => c.classList.add('hidden'));
+                        document.getElementById(tab.dataset.target).classList.remove('hidden');
+                    });
+                });
+
                 // Create Maps for Parent Lookup
                 const lguMap = lgus.reduce((acc, i) => ({...acc, [i.id]: i.name}), {});
                 const fsbdMap = fsbds.reduce((acc, i) => ({...acc, [i.id]: i.name}), {});
@@ -884,11 +898,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     tbody.innerHTML = items.map(item => `
                         <tr>
-                            <td>${nameFn(item)}</td>
-                            <td>${parentFn(item)}</td>
-                            <td>
-                                <a href="${editHash}/${item.id}" class="btn btn-sm btn-warning me-1">Edit</a>
-                                <button class="btn btn-sm btn-danger btn-delete" data-id="${item.id}">Delete</button>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${nameFn(item)}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${parentFn(item)}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <a href="${editHash}/${item.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs mr-1">Edit</a>
+                                <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs btn-delete" data-id="${item.id}">Delete</button>
                             </td>
                         </tr>
                     `).join('');
@@ -933,9 +947,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                      if (!tbody) return;
                      tbody.innerHTML = items.map(item => `
                         <tr>
-                            <td>${nameFn(item)}</td>
-                            <td>${parentFn(item)}</td>
-                            <td><button class="btn btn-sm btn-danger btn-delete" data-id="${item.id}">Delete</button></td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${nameFn(item)}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${parentFn(item)}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs btn-delete" data-id="${item.id}">Delete</button></td>
                         </tr>
                     `).join('');
                     tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', async (e) => { if(confirm('Delete?')) { await deleteFn(e.target.getAttribute('data-id')); e.target.closest('tr').remove(); } }));

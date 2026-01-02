@@ -1,59 +1,49 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Dashboard</h1>
+<!-- Hero Section -->
+<div class="bg-white shadow rounded-lg p-6 mb-8">
+    <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
+    <p class="text-gray-600 mt-2">Overview of energy efficiency performance and assets.</p>
 </div>
 
 <!-- Summary Statistics -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h5 class="card-title">Total Buildings</h5>
-                <p class="card-text fs-4" id="stats-total-buildings">...</p>
-            </div>
-        </div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6 text-center border-l-4 border-blue-500">
+        <div class="text-gray-500 font-bold uppercase text-xs mb-2">Total Buildings</div>
+        <div class="text-3xl font-bold text-gray-800" id="stats-total-buildings">...</div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h5 class="card-title">Total Vehicles</h5>
-                <p class="card-text fs-4" id="stats-total-vehicles">...</p>
-            </div>
-        </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 text-center border-l-4 border-green-500">
+        <div class="text-gray-500 font-bold uppercase text-xs mb-2">Total Vehicles</div>
+        <div class="text-3xl font-bold text-gray-800" id="stats-total-vehicles">...</div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h5 class="card-title">High Priority RIOs</h5>
-                <p class="card-text fs-4" id="stats-high-rios">...</p>
-            </div>
-        </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 text-center border-l-4 border-red-500">
+        <div class="text-gray-500 font-bold uppercase text-xs mb-2">High Priority RIOs</div>
+        <div class="text-3xl font-bold text-gray-800" id="stats-high-rios">...</div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h5 class="card-title">Ongoing Projects</h5>
-                <p class="card-text fs-4" id="stats-ongoing-ppas">...</p>
-            </div>
-        </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 text-center border-l-4 border-yellow-500">
+        <div class="text-gray-500 font-bold uppercase text-xs mb-2">Ongoing Projects</div>
+        <div class="text-3xl font-bold text-gray-800" id="stats-ongoing-ppas">...</div>
     </div>
 </div>
 
 <!-- Charts -->
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Monthly Electricity Consumption (kWh)</div>
-            <div class="card-body">
-                <canvas id="electricityChart"></canvas>
-            </div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+            <h3 class="text-lg font-semibold text-gray-800">Monthly Electricity Consumption (kWh)</h3>
+        </div>
+        <div class="p-6">
+            <canvas id="electricityChart"></canvas>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Monthly Fuel Consumption (Liters)</div>
-            <div class="card-body">
-                <canvas id="fuelChart"></canvas>
-            </div>
+    
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+            <h3 class="text-lg font-semibold text-gray-800">Monthly Fuel Consumption (Liters)</h3>
+        </div>
+        <div class="p-6">
+            <canvas id="fuelChart"></canvas>
         </div>
     </div>
 </div>

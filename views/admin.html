@@ -1,103 +1,92 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Admin Panel</h1>
+<!-- Hero Section -->
+<div class="bg-white shadow rounded-lg p-6 mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Admin Panel</h1>
+    <p class="text-gray-600 text-sm">Centralized management for all system entities.</p>
 </div>
 
-<ul class="nav nav-tabs mb-3" id="adminTab" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="tab-lgus" data-bs-toggle="tab" data-bs-target="#content-lgus" type="button" role="tab">LGUs</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-fsbds" data-bs-toggle="tab" data-bs-target="#content-fsbds" type="button" role="tab">Buildings</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-vehicles" data-bs-toggle="tab" data-bs-target="#content-vehicles" type="button" role="tab">Vehicles</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-made" data-bs-toggle="tab" data-bs-target="#content-made" type="button" role="tab">Equipment</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-mecr" data-bs-toggle="tab" data-bs-target="#content-mecr" type="button" role="tab">Elec. Reports</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-mfcr" data-bs-toggle="tab" data-bs-target="#content-mfcr" type="button" role="tab">Fuel Reports</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-rios" data-bs-toggle="tab" data-bs-target="#content-rios" type="button" role="tab">RIOs</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-ppas" data-bs-toggle="tab" data-bs-target="#content-ppas" type="button" role="tab">PPAs</button>
-    </li>
-</ul>
+<!-- Tabs -->
+<div class="mb-6 border-b border-gray-200">
+    <nav class="-mb-px flex flex-wrap gap-2" aria-label="Tabs">
+        <button class="tab-btn border-b-2 border-blue-500 text-blue-600 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-lgus">LGUs</button>
+        <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-fsbds">Buildings</button>
+        <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-vehicles">Vehicles</button>
+        <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-made">Equipment</button>
+        <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-mecr">Elec. Reports</button>
+        <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-mfcr">Fuel Reports</button>
+        <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-rios">RIOs</button>
+        <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-ppas">PPAs</button>
+    </nav>
+</div>
 
-<div class="tab-content" id="adminTabContent">
+<div id="adminTabContent" class="bg-white shadow rounded-lg p-4">
     <!-- LGUs -->
-    <div class="tab-pane fade show active" id="content-lgus" role="tabpanel">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover" id="table-lgus">
-                <thead class="table-dark"><tr><th>Name</th><th>Parent</th><th>Actions</th></tr></thead>
+    <div class="tab-content-item block" id="content-lgus">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal" id="table-lgus">
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
     <!-- Buildings -->
-    <div class="tab-pane fade" id="content-fsbds" role="tabpanel">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover" id="table-fsbds">
-                <thead class="table-dark"><tr><th>Name</th><th>Parent (LGU)</th><th>Actions</th></tr></thead>
+    <div class="tab-content-item hidden" id="content-fsbds">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal" id="table-fsbds">
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (LGU)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
     <!-- Vehicles -->
-    <div class="tab-pane fade" id="content-vehicles" role="tabpanel">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover" id="table-vehicles">
-                <thead class="table-dark"><tr><th>Name (Plate)</th><th>Parent (LGU)</th><th>Actions</th></tr></thead>
+    <div class="tab-content-item hidden" id="content-vehicles">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal" id="table-vehicles">
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name (Plate)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (LGU)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
     <!-- MADE -->
-    <div class="tab-pane fade" id="content-made" role="tabpanel">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover" id="table-made">
-                <thead class="table-dark"><tr><th>Name (Desc)</th><th>Parent (Building)</th><th>Actions</th></tr></thead>
+    <div class="tab-content-item hidden" id="content-made">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal" id="table-made">
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name (Desc)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (Building)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
     <!-- MECR -->
-    <div class="tab-pane fade" id="content-mecr" role="tabpanel">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover" id="table-mecr">
-                <thead class="table-dark"><tr><th>Report (Date)</th><th>Parent (Building)</th><th>Actions</th></tr></thead>
+    <div class="tab-content-item hidden" id="content-mecr">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal" id="table-mecr">
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Report (Date)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (Building)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
     <!-- MFCR -->
-    <div class="tab-pane fade" id="content-mfcr" role="tabpanel">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover" id="table-mfcr">
-                <thead class="table-dark"><tr><th>Report (Date)</th><th>Parent (Vehicle)</th><th>Actions</th></tr></thead>
+    <div class="tab-content-item hidden" id="content-mfcr">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal" id="table-mfcr">
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Report (Date)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (Vehicle)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
     <!-- RIOs -->
-    <div class="tab-pane fade" id="content-rios" role="tabpanel">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover" id="table-rios">
-                <thead class="table-dark"><tr><th>Name (Action)</th><th>Parent (Asset)</th><th>Actions</th></tr></thead>
+    <div class="tab-content-item hidden" id="content-rios">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal" id="table-rios">
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name (Action)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (Asset)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
     <!-- PPAs -->
-    <div class="tab-pane fade" id="content-ppas" role="tabpanel">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover" id="table-ppas">
-                <thead class="table-dark"><tr><th>Name</th><th>Parent</th><th>Actions</th></tr></thead>
+    <div class="tab-content-item hidden" id="content-ppas">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal" id="table-ppas">
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>

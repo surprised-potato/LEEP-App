@@ -1,34 +1,32 @@
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h2 id="form-title">Add New LGU</h2>
-            </div>
-            <div class="card-body">
-                <form id="lgu-form">
-                    <input type="hidden" id="lgu-id">
-                    
-                    <div class="mb-3">
-                        <label for="name" class="form-label">LGU Name</label>
-                        <input type="text" class="form-control" id="name" required placeholder="e.g., City of Manila">
-                    </div>
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 id="form-title" class="text-xl font-bold text-gray-800">Add New LGU</h2>
+        </div>
+        <div class="p-6">
+            <form id="lgu-form">
+                <input type="hidden" id="lgu-id">
+                
+                <div class="mb-4">
+                    <label for="name" class="block text-gray-700 text-sm font-bold mb-2">LGU Name</label>
+                    <input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="name" required placeholder="e.g., City of Manila">
+                </div>
 
-                    <div class="mb-3">
-                        <label for="region" class="form-label">Region</label>
-                        <input type="text" class="form-control" id="region" placeholder="e.g., NCR">
-                    </div>
+                <div class="mb-4">
+                    <label for="region" class="block text-gray-700 text-sm font-bold mb-2">Region</label>
+                    <input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="region" placeholder="e.g., NCR">
+                </div>
 
-                    <div class="mb-3">
-                        <label for="province" class="form-label">Province</label>
-                        <input type="text" class="form-control" id="province" placeholder="e.g., Metro Manila">
-                    </div>
+                <div class="mb-6">
+                    <label for="province" class="block text-gray-700 text-sm font-bold mb-2">Province</label>
+                    <input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="province" placeholder="e.g., Metro Manila">
+                </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a href="#/lgus" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Save LGU</button>
-                    </div>
-                </form>
-            </div>
+                <div class="flex items-center justify-between">
+                    <a href="#/lgus" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save LGU</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

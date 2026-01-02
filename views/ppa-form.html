@@ -1,43 +1,50 @@
-<h1>Project (PPA) Form</h1>
-
-<form id="ppa-form">
-    <input type="hidden" id="ppa-id">
-
-    <div class="mb-3">
-        <label for="project_name" class="form-label">Project Name</label>
-        <input type="text" class="form-control" id="project_name" required>
+<div class="max-w-3xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+        <h1 class="text-xl font-bold text-gray-800">Project (PPA) Form</h1>
     </div>
+    <div class="p-6">
+        <form id="ppa-form">
+            <input type="hidden" id="ppa-id">
 
-    <div class="mb-3">
-        <label for="relatedRioIds" class="form-label">Related Recommendations (RIOs)</label>
-        <select class="form-select" id="relatedRioIds" multiple size="5">
-            <!-- RIOs will be populated here -->
-        </select>
-        <div class="form-text">Hold Ctrl or Cmd to select multiple items.</div>
-    </div>
+            <div class="mb-4">
+                <label for="project_name" class="block text-gray-700 text-sm font-bold mb-2">Project Name</label>
+                <input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="project_name" required>
+            </div>
 
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="status" class="form-label">Status</label>
-            <select class="form-select" id="status">
-                <option value="Planned" selected>Planned</option>
-                <option value="Ongoing">Ongoing</option>
-                <option value="Completed">Completed</option>
-            </select>
-        </div>
-    </div>
+            <div class="mb-4">
+                <label for="relatedRioIds" class="block text-gray-700 text-sm font-bold mb-2">Related Recommendations (RIOs)</label>
+                <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="relatedRioIds" multiple size="5">
+                    <!-- RIOs will be populated here -->
+                </select>
+                <p class="text-gray-500 text-xs italic mt-1">Hold Ctrl or Cmd to select multiple items.</p>
+            </div>
 
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="estimated_cost_php" class="form-label">Estimated Cost (PHP)</label>
-            <input type="number" class="form-control" id="estimated_cost_php">
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="actual_cost_php" class="form-label">Actual Cost (PHP)</label>
-            <input type="number" class="form-control" id="actual_cost_php">
-        </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="status" class="block text-gray-700 text-sm font-bold mb-2">Status</label>
+                    <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="status">
+                        <option value="Planned" selected>Planned</option>
+                        <option value="Ongoing">Ongoing</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label for="estimated_cost_php" class="block text-gray-700 text-sm font-bold mb-2">Estimated Cost (PHP)</label>
+                    <input type="number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="estimated_cost_php">
+                </div>
+                <div>
+                    <label for="actual_cost_php" class="block text-gray-700 text-sm font-bold mb-2">Actual Cost (PHP)</label>
+                    <input type="number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="actual_cost_php">
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-start gap-4">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save</button>
+                <a href="#/ppas" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</a>
+            </div>
+        </form>
     </div>
-    
-    <button type="submit" class="btn btn-primary">Save</button>
-    <a href="#/ppas" class="btn btn-secondary">Cancel</a>
-</form>
+</div>

@@ -1,8 +1,99 @@
-<div class="container">
-    <h1 class="mb-4">User Manual</h1>
-    <p class="lead">Welcome to the LGU Energy Efficiency and Conservation (EEC) Platform. This guide will help you navigate and utilize the features of the application.</p>
+<!-- Hero Section -->
+<div class="bg-white shadow rounded-lg p-6 mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">User Manual</h1>
+    <p class="text-gray-600 text-sm">Guide to navigating and utilizing the LGU EEC Platform.</p>
+</div>
 
-    <div class="accordion" id="manualAccordion">
+<div class="space-y-4">
+    
+    <!-- Section 1: Getting Started -->
+    <details class="bg-white shadow rounded-lg group" open>
+        <summary class="list-none flex flex-wrap items-center cursor-pointer focus-visible:outline-none focus-visible:ring focus-visible:ring-pink-500 rounded group-open:rounded-b-none group-open:z-[1] relative">
+            <h3 class="flex flex-1 p-4 font-semibold text-gray-800">1. Getting Started & LGU Selection</h3>
+            <div class="flex w-10 items-center justify-center">
+                <div class="border-8 border-transparent border-l-gray-600 ml-2 group-open:rotate-90 transition-transform origin-left"></div>
+            </div>
+        </summary>
+        <div class="p-4 border-t border-gray-100 text-gray-600">
+            <p class="mb-2"><strong>LGU Selector:</strong> Located in the sidebar, this dropdown allows you to switch between different Local Government Units (LGUs). All data displayed (Buildings, Vehicles, Reports) is filtered based on the selected LGU.</p>
+            <p><strong>Dashboard:</strong> The landing page provides a high-level summary of your data, including total assets, high-priority recommendations, and consumption charts for electricity and fuel.</p>
+        </div>
+    </details>
+
+    <!-- Section 2: Managing Assets -->
+    <details class="bg-white shadow rounded-lg group">
+        <summary class="list-none flex flex-wrap items-center cursor-pointer focus-visible:outline-none focus-visible:ring focus-visible:ring-pink-500 rounded group-open:rounded-b-none group-open:z-[1] relative">
+            <h3 class="flex flex-1 p-4 font-semibold text-gray-800">2. Managing Assets (Buildings & Vehicles)</h3>
+            <div class="flex w-10 items-center justify-center">
+                <div class="border-8 border-transparent border-l-gray-600 ml-2 group-open:rotate-90 transition-transform origin-left"></div>
+            </div>
+        </summary>
+        <div class="p-4 border-t border-gray-100 text-gray-600">
+            <ul class="list-disc pl-5 space-y-2">
+                <li><strong>Buildings (FSBD):</strong> Navigate to the "Buildings" tab to view a list of government-owned buildings. Click "Add New Building" to register a facility. Ensure you fill in details like Floor Area and Construction Year.</li>
+                <li><strong>Vehicles:</strong> Navigate to the "Vehicles" tab to manage the fleet. You can record details such as Plate Number, Make, Model, and Fuel Type.</li>
+                <li><strong>Equipment (MADE):</strong> The "Equipment" tab tracks major energy-consuming devices (e.g., HVAC, Lighting) within specific buildings. You must select the parent building when adding equipment.</li>
+            </ul>
+        </div>
+    </details>
+
+    <!-- Section 3: Tracking Consumption -->
+    <details class="bg-white shadow rounded-lg group">
+        <summary class="list-none flex flex-wrap items-center cursor-pointer focus-visible:outline-none focus-visible:ring focus-visible:ring-pink-500 rounded group-open:rounded-b-none group-open:z-[1] relative">
+            <h3 class="flex flex-1 p-4 font-semibold text-gray-800">3. Consumption Reporting</h3>
+            <div class="flex w-10 items-center justify-center">
+                <div class="border-8 border-transparent border-l-gray-600 ml-2 group-open:rotate-90 transition-transform origin-left"></div>
+            </div>
+        </summary>
+        <div class="p-4 border-t border-gray-100 text-gray-600">
+            <p class="mb-2">Navigate to the <strong>Consumption</strong> page to log usage data.</p>
+            <ul class="list-disc pl-5 space-y-2">
+                <li><strong>Electricity (MECR):</strong> Select a building from the dropdown to view its history. Use the form to add a new monthly report (Year, Month, kWh consumed).</li>
+                <li><strong>Fuel (MFCR):</strong> Select a vehicle to view its fuel history. Add reports including Liters consumed and Distance traveled (km).</li>
+            </ul>
+        </div>
+    </details>
+
+    <!-- Section 4: Conservation & Projects -->
+    <details class="bg-white shadow rounded-lg group">
+        <summary class="list-none flex flex-wrap items-center cursor-pointer focus-visible:outline-none focus-visible:ring focus-visible:ring-pink-500 rounded group-open:rounded-b-none group-open:z-[1] relative">
+            <h3 class="flex flex-1 p-4 font-semibold text-gray-800">4. Recommendations & Projects</h3>
+            <div class="flex w-10 items-center justify-center">
+                <div class="border-8 border-transparent border-l-gray-600 ml-2 group-open:rotate-90 transition-transform origin-left"></div>
+            </div>
+        </summary>
+        <div class="p-4 border-t border-gray-100 text-gray-600">
+            <ul class="list-disc pl-5 space-y-2">
+                <li><strong>Recommendations (RIO):</strong> Log identified opportunities for energy saving (e.g., "Replace LED lights"). These are linked to specific Buildings or Vehicles and categorized by Priority (High, Medium, Low).</li>
+                <li><strong>Projects (PPA):</strong> Manage funded projects aimed at implementing RIOs. You can link multiple RIOs to a single Project and track Estimated vs. Actual Costs.</li>
+            </ul>
+        </div>
+    </details>
+
+    <!-- Section 5: Admin Panel -->
+    <details class="bg-white shadow rounded-lg group">
+        <summary class="list-none flex flex-wrap items-center cursor-pointer focus-visible:outline-none focus-visible:ring focus-visible:ring-pink-500 rounded group-open:rounded-b-none group-open:z-[1] relative">
+            <h3 class="flex flex-1 p-4 font-semibold text-gray-800">5. Administration</h3>
+            <div class="flex w-10 items-center justify-center">
+                <div class="border-8 border-transparent border-l-gray-600 ml-2 group-open:rotate-90 transition-transform origin-left"></div>
+            </div>
+        </summary>
+        <div class="p-4 border-t border-gray-100 text-gray-600">
+            <p class="mb-2">The <strong>Admin</strong> tab provides a master view of all data in the system.</p>
+            <ul class="list-disc pl-5 space-y-2">
+                <li><strong>LGUs:</strong> Create and manage Local Government Units here.</li>
+                <li><strong>Data Cleanup:</strong> View lists of all entities (Buildings, Vehicles, etc.) regardless of the currently selected LGU. This is useful for finding "orphaned" records that haven't been assigned to an LGU yet.</li>
+                <li><strong>Delete:</strong> Use the delete button with caution to remove erroneous entries.</li>
+            </ul>
+        </div>
+    </details>
+
+</div>
+
+<div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+    <h5 class="font-bold text-blue-800">Need Help?</h5>
+    <p class="text-blue-700 text-sm">If you encounter technical issues or need support, please contact the system administrator.</p>
+</div>
         
         <!-- Section 1: Getting Started -->
         <div class="accordion-item">

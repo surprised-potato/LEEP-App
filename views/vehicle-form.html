@@ -1,40 +1,49 @@
-<h1>Vehicle Form</h1>
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800">Vehicle Form</h2>
+        </div>
+        <div class="p-6">
+            <form id="vehicle-form">
+                <input type="hidden" id="vehicle-id">
+                
+                <div class="mb-4">
+                    <label for="plate_number" class="block text-gray-700 text-sm font-bold mb-2">Plate Number</label>
+                    <input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="plate_number" required>
+                </div>
 
-<form id="vehicle-form">
-    <!-- Hidden input for document ID during edits -->
-    <input type="hidden" id="vehicle-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="make" class="block text-gray-700 text-sm font-bold mb-2">Make</label>
+                        <input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="make">
+                    </div>
+                    <div>
+                        <label for="model" class="block text-gray-700 text-sm font-bold mb-2">Model</label>
+                        <input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="model">
+                    </div>
+                </div>
 
-    <div class="mb-3">
-        <label for="plate_number" class="form-label">Plate Number</label>
-        <input type="text" class="form-control" id="plate_number" required>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label for="year_model" class="block text-gray-700 text-sm font-bold mb-2">Year Model</label>
+                        <input type="number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="year_model">
+                    </div>
+                    <div>
+                        <label for="fuel_type" class="block text-gray-700 text-sm font-bold mb-2">Fuel Type</label>
+                        <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="fuel_type">
+                            <option value="Gasoline">Gasoline</option>
+                            <option value="Diesel">Diesel</option>
+                            <option value="Electric">Electric</option>
+                            <option value="Hybrid">Hybrid</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <a href="#/vehicles" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save Vehicle</button>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="make" class="form-label">Make</label>
-            <input type="text" class="form-control" id="make">
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="model" class="form-label">Model</label>
-            <input type="text" class="form-control" id="model">
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="year_model" class="form-label">Year Model</label>
-            <input type="number" class="form-control" id="year_model">
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="fuel_type" class="form-label">Fuel Type</label>
-            <select class="form-select" id="fuel_type">
-                <option selected>Choose...</option>
-                <option value="Gasoline">Gasoline</option>
-                <option value="Diesel">Diesel</option>
-            </select>
-        </div>
-    </div>
-    
-    <button type="submit" class="btn btn-primary">Save</button>
-    <a href="#/vehicles" class="btn btn-secondary">Cancel</a>
-</form>
+</div>
