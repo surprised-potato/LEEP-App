@@ -417,8 +417,13 @@ async function getMecrReports(fsbdId) {
         return [];
     }
     try {
-        const snapshot = await db.collection('mecr_reports').where('fsbdId', '==', fsbdId).orderBy('reporting_year', 'desc').orderBy('reporting_month', 'desc').get();
+        // Removed orderBy to avoid needing a composite index during development. Sorting is done client-side.
+        const snapshot = await db.collection('mecr_reports').where('fsbdId', '==', fsbdId).get();
         const reportList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Client-side sort: Year desc, then Month desc
+        reportList.sort((a, b) => (b.reporting_year - a.reporting_year) || (b.reporting_month - a.reporting_month));
+        
         console.log("Fetched MECR reports:", reportList);
         return reportList;
     } catch (error) {
@@ -475,8 +480,13 @@ async function getMfcrReports(vehicleId) {
         return [];
     }
     try {
-        const snapshot = await db.collection('mfcr_reports').where('vehicleId', '==', vehicleId).orderBy('reporting_year', 'desc').orderBy('reporting_month', 'desc').get();
+        // Removed orderBy to avoid needing a composite index during development. Sorting is done client-side.
+        const snapshot = await db.collection('mfcr_reports').where('vehicleId', '==', vehicleId).get();
         const reportList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Client-side sort: Year desc, then Month desc
+        reportList.sort((a, b) => (b.reporting_year - a.reporting_year) || (b.reporting_month - a.reporting_month));
+        
         console.log("Fetched MFCR reports:", reportList);
         return reportList;
     } catch (error) {

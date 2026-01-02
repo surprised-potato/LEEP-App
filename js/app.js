@@ -788,57 +788,68 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // --- DASHBOARD FUNCTIONS ---
             async function renderDashboard() {
-                let [buildings, vehicles, rios, ppas, mecrResults, mfcrResults] = await Promise.all([
-                    getFsbdList(),
-                    getVehicleList(),
-                    getRioList(),
-                    getPpaList(),
-                    db.collection('mecr_reports').get(),
-                    db.collection('mfcr_reports').get(),
-                ]);
-                
-                let mecrReports = mecrResults.docs.map(doc => doc.data());
-                let mfcrReports = mfcrResults.docs.map(doc => doc.data());
+                if (!window.db) return;
 
-                // Filter Data by LGU
-                if (currentLguId) {
-                    buildings = buildings.filter(b => b.lguId === currentLguId);
-                    vehicles = vehicles.filter(v => v.lguId === currentLguId);
+                try {
+                    let [buildings, vehicles, rios, ppas, mecrResults, mfcrResults] = await Promise.all([
+                        getFsbdList(),
+                        getVehicleList(),
+                        getRioList(),
+                        getPpaList(),
+                        db.collection('mecr_reports').get().catch(e => { console.error(e); return { docs: [] }; }),
+                        db.collection('mfcr_reports').get().catch(e => { console.error(e); return { docs: [] }; }),
+                    ]);
                     
-                    const allowedBldgIds = new Set(buildings.map(b => b.id));
-                    const allowedVehicleIds = new Set(vehicles.map(v => v.id));
+                    let mecrReports = mecrResults.docs.map(doc => doc.data());
+                    let mfcrReports = mfcrResults.docs.map(doc => doc.data());
 
-                    rios = rios.filter(r => allowedBldgIds.has(r.fsbdId) || allowedVehicleIds.has(r.vehicleId));
-                    // Note: PPA filtering is complex, skipping for dashboard summary for brevity or assuming PPA links to filtered RIOs
+                    // Filter Data by LGU
+                    if (currentLguId) {
+                        buildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
+                        vehicles = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
+                        
+                        const allowedBldgIds = new Set(buildings.map(b => b.id));
+                        const allowedVehicleIds = new Set(vehicles.map(v => v.id));
+
+                        rios = rios.filter(r => allowedBldgIds.has(r.fsbdId) || allowedVehicleIds.has(r.vehicleId));
+                        
+                        mecrReports = mecrReports.filter(r => allowedBldgIds.has(r.fsbdId));
+                        mfcrReports = mfcrReports.filter(r => allowedVehicleIds.has(r.vehicleId));
+                    }
+
+                    // Calculate additional KPIs
+                    const totalElectricity = mecrReports.reduce((sum, r) => sum + (Number(r.electricity_consumption_kwh) || 0), 0);
+                    const totalFuel = mfcrReports.reduce((sum, r) => sum + (Number(r.fuel_consumed_liters) || 0), 0);
+                    const totalSavings = rios.reduce((sum, r) => sum + (Number(r.estimated_savings_php) || 0), 0);
+                    const totalInvestment = ppas.reduce((sum, p) => sum + (Number(p.actual_cost_php) || Number(p.estimated_cost_php) || 0), 0);
+
+                    // Render Stats Helper
+                    const setSafeText = (id, text) => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = text;
+                    };
+
+                    setSafeText('stats-total-buildings', buildings.length);
+                    setSafeText('stats-total-vehicles', vehicles.length);
+                    setSafeText('stats-high-rios', rios.filter(r => r.priority === 'High').length);
+                    setSafeText('stats-ongoing-ppas', ppas.filter(p => p.status === 'Ongoing').length);
+
+                    // Render New KPIs
+                    setSafeText('stats-total-electricity', totalElectricity.toLocaleString());
+                    setSafeText('stats-total-fuel', totalFuel.toLocaleString());
+                    setSafeText('stats-total-savings', '₱' + totalSavings.toLocaleString());
+                    setSafeText('stats-total-investment', '₱' + totalInvestment.toLocaleString());
                     
-                    mecrReports = mecrReports.filter(r => allowedBldgIds.has(r.fsbdId));
-                    mfcrReports = mfcrReports.filter(r => allowedVehicleIds.has(r.vehicleId));
+                    // Process and Render Charts
+                    renderConsumptionChart('electricityChart', mecrReports, 'electricity_consumption_kwh', 'Electricity (kWh)');
+                    renderConsumptionChart('fuelChart', mfcrReports, 'fuel_consumed_liters', 'Fuel (Liters)');
+                } catch (error) {
+                    console.error("Error rendering dashboard:", error);
                 }
-
-                // Calculate additional KPIs
-                const totalElectricity = mecrReports.reduce((sum, r) => sum + (Number(r.electricity_consumption_kwh) || 0), 0);
-                const totalFuel = mfcrReports.reduce((sum, r) => sum + (Number(r.fuel_consumed_liters) || 0), 0);
-                const totalSavings = rios.reduce((sum, r) => sum + (Number(r.estimated_savings_php) || 0), 0);
-                const totalInvestment = ppas.reduce((sum, p) => sum + (Number(p.actual_cost_php) || Number(p.estimated_cost_php) || 0), 0);
-
-                // Render Stats
-                document.getElementById('stats-total-buildings').textContent = buildings.length;
-                document.getElementById('stats-total-vehicles').textContent = vehicles.length;
-                document.getElementById('stats-high-rios').textContent = rios.filter(r => r.priority === 'High').length;
-                document.getElementById('stats-ongoing-ppas').textContent = ppas.filter(p => p.status === 'Ongoing').length;
-
-                // Render New KPIs
-                if(document.getElementById('stats-total-electricity')) document.getElementById('stats-total-electricity').textContent = totalElectricity.toLocaleString();
-                if(document.getElementById('stats-total-fuel')) document.getElementById('stats-total-fuel').textContent = totalFuel.toLocaleString();
-                if(document.getElementById('stats-total-savings')) document.getElementById('stats-total-savings').textContent = '₱' + totalSavings.toLocaleString();
-                if(document.getElementById('stats-total-investment')) document.getElementById('stats-total-investment').textContent = '₱' + totalInvestment.toLocaleString();
-                
-                // Process and Render Charts
-                renderConsumptionChart('electricityChart', mecrReports, 'electricity_consumption_kwh', 'Electricity (kWh)');
-                renderConsumptionChart('fuelChart', mfcrReports, 'fuel_consumed_liters', 'Fuel (Liters)');
             }
 
             function renderConsumptionChart(canvasId, reports, dataKey, label) {
+                if (typeof Chart === 'undefined') return;
                 const ctx = document.getElementById(canvasId);
                 if (!ctx) return;
 
