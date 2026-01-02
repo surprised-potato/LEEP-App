@@ -1,69 +1,74 @@
-<div class="max-w-2xl mx-auto">
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-        <div class="hero-header px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-bold">Recommendation Form</h2>
-        </div>
-        <div class="p-6">
-            <form id="rio-form">
-                <input type="hidden" id="rio-id">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="assetType" class="block text-gray-700 text-sm font-bold mb-2">Asset Type</label>
-                        <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="assetType">
-                            <option value="">-- Select Type --</option>
-                            <option value="building">Building</option>
-                            <option value="vehicle">Vehicle</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="assetId" class="block text-gray-700 text-sm font-bold mb-2">Asset</label>
-                        <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="assetId" disabled>
-                            <option value="">Select Asset Type First</option>
-                        </select>
-                    </div>
-                </div>
+<div class="max-w-3xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+    <div class="hero-header px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h1 class="text-xl font-bold">Recommendation (RIO) Form</h1>
+        <a href="#/rios" class="text-white hover:text-gray-200 font-medium text-sm flex items-center gap-1"><span class="text-lg">&larr;</span> Back</a>
+    </div>
+    <div class="p-6">
+        <form id="rio-form">
+            <input type="hidden" id="rio-id">
 
-                <div class="mb-4">
-                    <label for="proposed_action" class="block text-gray-700 text-sm font-bold mb-2">Proposed Action</label>
-                    <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="proposed_action" rows="3" required></textarea>
-                </div>
+            <div class="mb-4">
+                <label for="proposed_action" class="block text-gray-700 text-sm font-bold mb-2">Proposed Action</label>
+                <input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="proposed_action" required>
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="priority" class="block text-gray-700 text-sm font-bold mb-2">Priority</label>
-                        <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="priority">
-                            <option value="High">High</option>
-                            <option value="Medium" selected>Medium</option>
-                            <option value="Low">Low</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="status" class="block text-gray-700 text-sm font-bold mb-2">Status</label>
-                        <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="status">
-                            <option value="Identified" selected>Identified</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Implemented">Implemented</option>
-                        </select>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="assetType" class="block text-gray-700 text-sm font-bold mb-2">Asset Type</label>
+                    <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="assetType" required>
+                        <option value="">-- Select Type --</option>
+                        <option value="building">Building</option>
+                        <option value="vehicle">Vehicle</option>
+                    </select>
                 </div>
+                <div>
+                    <label for="assetId" class="block text-gray-700 text-sm font-bold mb-2">Asset</label>
+                    <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="assetId" disabled required>
+                        <option value="">Select Asset Type First</option>
+                    </select>
+                </div>
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label for="estimated_cost_php" class="block text-gray-700 text-sm font-bold mb-2">Est. Cost (PHP)</label>
-                        <input type="number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="estimated_cost_php">
-                    </div>
-                    <div>
-                        <label for="estimated_savings_php" class="block text-gray-700 text-sm font-bold mb-2">Est. Savings (PHP)</label>
-                        <input type="number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="estimated_savings_php">
-                    </div>
-                </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Related SEU Findings</label>
+                <div id="selected-seus-container" class="min-h-[50px] border rounded p-2 bg-gray-50"></div>
+            </div>
 
-                <div class="flex items-center justify-between">
-                    <a href="#/rios" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</a>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save RIO</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="priority" class="block text-gray-700 text-sm font-bold mb-2">Priority</label>
+                    <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="priority">
+                        <option value="High">High</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
                 </div>
-            </form>
-        </div>
+                <div>
+                    <label for="status" class="block text-gray-700 text-sm font-bold mb-2">Status</label>
+                    <select class="block w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="status">
+                        <option value="Identified" selected>Identified</option>
+                        <option value="Planned">Planned</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label for="estimated_cost_php" class="block text-gray-700 text-sm font-bold mb-2">Est. Cost (PHP)</label>
+                    <input type="number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="estimated_cost_php">
+                </div>
+                <div>
+                    <label for="estimated_savings_php" class="block text-gray-700 text-sm font-bold mb-2">Est. Savings (PHP)</label>
+                    <input type="number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="estimated_savings_php">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-start gap-4">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save</button>
+                <a href="#/rios" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</a>
+            </div>
+        </form>
     </div>
 </div>

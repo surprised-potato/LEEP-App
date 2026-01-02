@@ -20,6 +20,7 @@ The LGU EEC Platform is a web-based application designed to assist Local Governm
 * **Analysis**: Automatic/Manual identification of Significant Energy Use (SEU).
 * **Action Planning**: Creation of Recommendations for Improvement (RIO) and tracking of Programs and Projects (PPA).
 * **Decision Support**: Contextual analytics (Top Consumers, MoM/YoY trends) displayed during RIO creation to aid in identifying opportunities.
+* **Compliance Reporting**: A dedicated module accessible via the navbar to generate a comprehensive, printable PDF report of the LGU's EEC program status (Assets, Consumption, RIOs, PPAs) formatted for submission to the national body (DOE).
 * **User Guidance**: Integrated interactive User Manual.
 * **User Authentication & RBAC**: Secure access with roles. New users register with a 'Pending' status and must select a target LGU. Access is restricted until a System/LGU Admin assigns a specific role.
 * **Future Implementation**: Document uploads for verification (e.g., electricity bills, fuel receipts, agency logos) will be added in a future version.

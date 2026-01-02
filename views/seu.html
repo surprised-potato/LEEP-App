@@ -1,0 +1,87 @@
+<div class="flex flex-col space-y-6">
+    <!-- Hero Header -->
+    <div class="bg-white shadow rounded-lg p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Significant Energy Use (SEU)</h1>
+            <p class="text-gray-600 text-sm">Identify and manage significant energy users based on asset ratings and consumption history.</p>
+        </div>
+    </div>
+
+    <!-- Registered SEUs -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="text-lg font-bold text-gray-800">Registered SEU Findings</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal" id="table-seus">
+                <thead>
+                    <tr>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Asset</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Method</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="seu-table-body">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Consumers Chart -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Top Energy Consumers (by Cost)</h3>
+        <div class="relative h-64 w-full">
+            <canvas id="chart-top-consumers"></canvas>
+        </div>
+    </div>
+
+    <!-- Analysis Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Equipment Analysis -->
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-200 bg-indigo-50">
+                <h3 class="text-lg font-bold text-indigo-900">Equipment Analysis (Calculated)</h3>
+                <p class="text-xs text-indigo-700">Based on Nameplate Rating × Operating Hours</p>
+            </div>
+            <div class="overflow-x-auto flex-1">
+                <table class="min-w-full leading-normal">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase">Equipment / Location</th>
+                            <th class="px-4 py-2 border-b border-gray-200 bg-gray-50 text-right text-xs font-semibold text-gray-600 uppercase">Est. Monthly kWh</th>
+                            <th class="px-4 py-2 border-b border-gray-200 bg-gray-50 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analysis-equipment-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Vehicle Analysis -->
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-200 bg-teal-50">
+                <h3 class="text-lg font-bold text-teal-900">Vehicle Analysis (Historical)</h3>
+                <p class="text-xs text-teal-700">Based on Average Monthly Fuel Consumption</p>
+            </div>
+            <div class="overflow-x-auto flex-1">
+                <table class="min-w-full leading-normal">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase">Vehicle</th>
+                            <th class="px-4 py-2 border-b border-gray-200 bg-gray-50 text-right text-xs font-semibold text-gray-600 uppercase">Avg Monthly Liters</th>
+                            <th class="px-4 py-2 border-b border-gray-200 bg-gray-50 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analysis-vehicle-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

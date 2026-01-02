@@ -544,17 +544,17 @@ const SAMPLE_DATA = {
     ],
     rios: [
         // Pasig (Existing)
-        { id: 'sample_rio_1', fsbdId: 'sample_fsbd_1', proposed_action: 'Replace AC Units with Inverter Type', priority: 'High', status: 'Identified', estimated_cost_php: 2000000, estimated_savings_php: 300000 },
+        { id: 'sample_rio_1', fsbdId: 'sample_fsbd_1', seuFindingIds: ['sample_seu_1'], proposed_action: 'Replace AC Units with Inverter Type', priority: 'High', status: 'Identified', estimated_cost_php: 2000000, estimated_savings_php: 300000 },
         { id: 'sample_rio_2', fsbdId: 'sample_fsbd_1', proposed_action: 'Install Solar PV System (100kWp)', priority: 'High', status: 'Planned', estimated_cost_php: 5000000, estimated_savings_php: 800000 },
         { id: 'sample_rio_3', fsbdId: 'sample_fsbd_2', proposed_action: 'Upgrade Sports Center Lighting to LED', priority: 'Medium', status: 'In Progress', estimated_cost_php: 500000, estimated_savings_php: 120000 },
-        { id: 'sample_rio_4', vehicleId: 'sample_veh_3', proposed_action: 'Route Optimization for Garbage Trucks', priority: 'High', status: 'Identified', estimated_cost_php: 50000, estimated_savings_php: 200000 },
+        { id: 'sample_rio_4', vehicleId: 'sample_veh_3', seuFindingIds: ['sample_seu_2'], proposed_action: 'Route Optimization for Garbage Trucks', priority: 'High', status: 'Identified', estimated_cost_php: 50000, estimated_savings_php: 200000 },
         { id: 'sample_rio_5', fsbdId: 'sample_fsbd_4', proposed_action: 'Window Tinting for Heat Reduction', priority: 'Low', status: 'Identified', estimated_cost_php: 100000, estimated_savings_php: 15000 },
         { id: 'sample_rio_6', fsbdId: 'sample_fsbd_5', proposed_action: 'Solar Streetlights for Market Perimeter', priority: 'Medium', status: 'Planned', estimated_cost_php: 300000, estimated_savings_php: 40000 },
         // Cainta (New)
-        { id: 'sample_rio_7', fsbdId: 'sample_fsbd_6', proposed_action: 'LED Retrofit for Classrooms', priority: 'High', status: 'Planned', estimated_cost_php: 200000, estimated_savings_php: 50000 },
+        { id: 'sample_rio_7', fsbdId: 'sample_fsbd_6', seuFindingIds: ['sample_seu_3'], proposed_action: 'LED Retrofit for Classrooms', priority: 'High', status: 'Planned', estimated_cost_php: 200000, estimated_savings_php: 50000 },
         { id: 'sample_rio_8', vehicleId: 'sample_veh_6', proposed_action: 'Preventive Maintenance Schedule', priority: 'Medium', status: 'In Progress', estimated_cost_php: 20000, estimated_savings_php: 10000 },
         // QC (New)
-        { id: 'sample_rio_9', fsbdId: 'sample_fsbd_7', proposed_action: 'Chiller Plant Upgrade', priority: 'High', status: 'Identified', estimated_cost_php: 10000000, estimated_savings_php: 2000000 },
+        { id: 'sample_rio_9', fsbdId: 'sample_fsbd_7', seuFindingIds: ['sample_seu_4'], proposed_action: 'Chiller Plant Upgrade', priority: 'High', status: 'Identified', estimated_cost_php: 10000000, estimated_savings_php: 2000000 },
         { id: 'sample_rio_10', fsbdId: 'sample_fsbd_9', proposed_action: 'Solar Roof for Sports Complex', priority: 'Medium', status: 'Planned', estimated_cost_php: 8000000, estimated_savings_php: 900000 },
         { id: 'sample_rio_11', vehicleId: 'sample_veh_7', proposed_action: 'Driver Eco-Driving Training', priority: 'Low', status: 'Completed', estimated_cost_php: 50000, estimated_savings_php: 30000 }
     ],
@@ -568,6 +568,12 @@ const SAMPLE_DATA = {
         // QC (New)
         { id: 'sample_ppa_5', project_name: 'QC Hall Chiller Replacement', status: 'Planned', estimated_cost_php: 10000000, relatedRioIds: ['sample_rio_9'] },
         { id: 'sample_ppa_6', project_name: 'Eco-Driving Certification', status: 'Completed', estimated_cost_php: 50000, actual_cost_php: 45000, relatedRioIds: ['sample_rio_11'] }
+    ],
+    seu_findings: [
+        { id: 'sample_seu_1', fsbdId: 'sample_fsbd_1', energy_use_category: 'ACU', finding_description: 'High consumption AC units', identification_method: 'Calculated', status: 'Identified' },
+        { id: 'sample_seu_2', vehicleId: 'sample_veh_3', energy_use_category: 'Fuel Consumption', finding_description: 'Inefficient Garbage Truck', identification_method: 'Historical Average', status: 'Identified' },
+        { id: 'sample_seu_3', fsbdId: 'sample_fsbd_6', energy_use_category: 'Lighting', finding_description: 'Old lighting fixtures', identification_method: 'Audit', status: 'Identified' },
+        { id: 'sample_seu_4', fsbdId: 'sample_fsbd_7', energy_use_category: 'ACU', finding_description: 'Chiller plant optimization needed', identification_method: 'Calculated', status: 'Identified' }
     ]
 };
 
@@ -627,6 +633,63 @@ async function deleteSampleData() {
     }
 }
 
+// --- SEU Functions ---
+
+/**
+ * Fetches the list of all SEU findings from Firestore.
+ * @returns {Promise<Array>} A promise that resolves to an array of SEU objects.
+ */
+async function getSeuList() {
+    if (!window.db) {
+        console.error("Firestore is not initialized.");
+        return [];
+    }
+    try {
+        const snapshot = await db.collection('seu_findings').get();
+        const seuList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("Fetched SEUs:", seuList);
+        return seuList;
+    } catch (error) {
+        console.error("Error fetching SEU list:", error);
+        return [];
+    }
+}
+
+/**
+ * Creates a new SEU finding document in Firestore.
+ * @param {object} data The SEU data to save.
+ * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
+ */
+async function createSeu(data) {
+    if (!window.db) {
+        console.error("Firestore is not initialized.");
+        return null;
+    }
+    try {
+        const docRef = await db.collection('seu_findings').add(data);
+        console.log("Created new SEU finding with ID:", docRef.id);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error creating SEU finding:", error);
+        return null;
+    }
+}
+
+/**
+ * Deletes an SEU finding document.
+ * @param {string} docId 
+ */
+async function deleteSeu(docId) {
+    if (!window.db) return false;
+    try {
+        await db.collection('seu_findings').doc(docId).delete();
+        return true;
+    } catch (error) {
+        console.error("Error deleting SEU finding:", error);
+        return false;
+    }
+}
+
 // Export for Node.js testing environment
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -638,7 +701,8 @@ if (typeof module !== 'undefined' && module.exports) {
         getMfcrReports, createMfcrReport, deleteMfcrReport,
         getRioList, createRio, updateRio, getRioById, deleteRio,
         getPpaList, createPpa, updatePpa, getPpaById, deletePpa,
-        checkSampleDataExists, createSampleData, deleteSampleData
+        checkSampleDataExists, createSampleData, deleteSampleData,
+        getSeuList, createSeu, deleteSeu
     };
 }
 

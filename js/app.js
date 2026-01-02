@@ -119,6 +119,9 @@ async function handleRouting() {
                 } else if (path === '/consumption') {
                     viewPath = 'views/consumption.html';
                     await loadContent(viewPath, initConsumptionPage);
+                } else if (path === '/seu') {
+                    viewPath = 'views/seu.html';
+                    await loadContent(viewPath, renderSeuPage);
                 } else if (path === '/rios') {
                     viewPath = 'views/rio-list.html';
                     await loadContent(viewPath, renderRioList);
@@ -139,6 +142,9 @@ async function handleRouting() {
                     viewPath = 'views/ppa-form.html';
                     params = { id: parts[3] };
                     await loadContent(viewPath, () => initPpaForm(params.id));
+                } else if (path === '/reporting') {
+                    viewPath = 'views/reporting.html';
+                    await loadContent(viewPath, renderReporting);
                 } else if (path === '/admin') {
                     viewPath = 'views/admin.html';
                     await loadContent(viewPath, renderAdmin);
@@ -730,6 +736,45 @@ async function initRioForm(docId = null) {
                 const statusField = document.getElementById('status');
                 const costField = document.getElementById('estimated_cost_php');
                 const savingsField = document.getElementById('estimated_savings_php');
+                const selectedSeusContainer = document.getElementById('selected-seus-container');
+
+                // Fetch SEUs for dropdown
+                const allSeus = await getSeuList();
+                let selectedSeuIds = new Set();
+
+                // Helper to render selected SEUs in the form
+                const renderSelectedSeus = () => {
+                    selectedSeusContainer.innerHTML = '';
+                    if (selectedSeuIds.size === 0) {
+                        selectedSeusContainer.innerHTML = '<p class="text-gray-400 text-xs italic p-1">Select SEUs from the Reference Data panel.</p>';
+                        return;
+                    }
+                    selectedSeuIds.forEach(id => {
+                        const seu = allSeus.find(s => s.id === id);
+                        if (!seu) return;
+                        const div = document.createElement('div');
+                        div.className = 'flex justify-between items-center bg-white border p-2 rounded shadow-sm mb-2';
+                        div.innerHTML = `<div class="text-sm">
+                            <div class="font-bold text-xs text-gray-500">${seu.energy_use_category}</div>
+                            ${seu.finding_description}
+                        </div>
+                        <button type="button" class="text-red-500 hover:text-red-700 text-xs font-bold btn-remove-seu px-2" data-id="${id}">&times;</button>`;
+                        selectedSeusContainer.appendChild(div);
+                    });
+                    
+                    selectedSeusContainer.querySelectorAll('.btn-remove-seu').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            selectedSeuIds.delete(e.target.dataset.id);
+                            renderSelectedSeus();
+                            updateContext(); // Refresh context to show "Add" button again
+                        });
+                    });
+                };
+
+                // Placeholder for context updater, defined after refContainer creation
+                let updateContext = () => {};
+
+                assetIdField.addEventListener('change', () => updateContext());
 
                 assetTypeField.addEventListener('change', async () => {
                     const type = assetTypeField.value;
@@ -740,33 +785,18 @@ async function initRioForm(docId = null) {
                         const filtered = currentLguId ? buildings.filter(b => b.lguId === currentLguId || !b.lguId) : buildings;
                         assetIdField.innerHTML = filtered.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
                         assetIdField.disabled = false;
+                        if (filtered.length > 0) assetIdField.value = filtered[0].id;
                     } else if (type === 'vehicle') {
                         const vehicles = await getVehicleList();
                         const filtered = currentLguId ? vehicles.filter(v => v.lguId === currentLguId || !v.lguId) : vehicles;
                         assetIdField.innerHTML = filtered.map(v => `<option value="${v.id}">${v.plate_number}</option>`).join('');
                         assetIdField.disabled = false;
+                        if (filtered.length > 0) assetIdField.value = filtered[0].id;
                     } else {
                         assetIdField.innerHTML = '<option>Please select an asset type first</option>';
                     }
+                    updateContext();
                 });
-
-                if (docId) {
-                    // EDIT MODE
-                    const data = await getRioById(docId);
-                    if (data) {
-                        idField.value = data.id;
-                        actionField.value = data.proposed_action || '';
-                        priorityField.value = data.priority || 'Medium';
-                        statusField.value = data.status || 'Identified';
-                        costField.value = data.estimated_cost_php || '';
-                        savingsField.value = data.estimated_savings_php || '';
-                        
-                        const assetType = data.fsbdId ? 'building' : 'vehicle';
-                        assetTypeField.value = assetType;
-                        await assetTypeField.dispatchEvent(new Event('change')); // Trigger change to populate assets
-                        assetIdField.value = data.fsbdId || data.vehicleId || '';
-                    }
-                }
 
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
@@ -779,6 +809,7 @@ async function initRioForm(docId = null) {
                         estimated_savings_php: Number(savingsField.value) || null,
                         fsbdId: assetTypeField.value === 'building' ? assetIdField.value : null,
                         vehicleId: assetTypeField.value === 'vehicle' ? assetIdField.value : null,
+                        seuFindingIds: Array.from(selectedSeuIds)
                     };
 
                     const id = idField.value;
@@ -823,22 +854,76 @@ async function initRioForm(docId = null) {
                     const refContainer = document.createElement('div');
                     gridWrapper.appendChild(refContainer);
                     
-                    await renderRioContext(refContainer);
+                    // Define updateContext now that refContainer exists
+                    updateContext = () => {
+                        renderRioContext(refContainer, assetIdField.value, assetTypeField.value, (seuId) => {
+                            if (!selectedSeuIds.has(seuId)) {
+                                selectedSeuIds.add(seuId);
+                                renderSelectedSeus();
+                                updateContext();
+                            }
+                        }, selectedSeuIds);
+                    };
+
+                    // Handle Data Loading (Edit Mode vs Create Mode)
+                    if (docId) {
+                        // EDIT MODE
+                        const data = await getRioById(docId);
+                        if (data) {
+                            idField.value = data.id;
+                            actionField.value = data.proposed_action || '';
+                            priorityField.value = data.priority || 'Medium';
+                            statusField.value = data.status || 'Identified';
+                            costField.value = data.estimated_cost_php || '';
+                            savingsField.value = data.estimated_savings_php || '';
+                            
+                            const assetType = data.fsbdId ? 'building' : 'vehicle';
+                            assetTypeField.value = assetType;
+                            
+                            // Manually populate assets to ensure await finishes before setting value
+                            assetIdField.innerHTML = '<option value="">Loading...</option>';
+                            assetIdField.disabled = true;
+                            
+                            let assets = [];
+                            if (assetType === 'building') {
+                                assets = await getFsbdList();
+                            } else {
+                                assets = await getVehicleList();
+                            }
+                            
+                            if (currentLguId) {
+                                assets = assets.filter(a => a.lguId === currentLguId || !a.lguId);
+                            }
+                            
+                            assetIdField.innerHTML = assets.map(a => `<option value="${a.id}">${a.name || a.plate_number}</option>`).join('');
+                            assetIdField.disabled = false;
+                            assetIdField.value = data.fsbdId || data.vehicleId || '';
+
+                            if (data.seuFindingIds) {
+                                data.seuFindingIds.forEach(id => selectedSeuIds.add(id));
+                                renderSelectedSeus();
+                            }
+                        }
+                    }
+                    
+                    // Initial Render of Context
+                    updateContext();
                 }
 }
 
-async function renderRioContext(container) {
-    container.innerHTML = '<div class="bg-white shadow rounded-lg p-6"><div class="text-center py-4 text-gray-500">Loading asset context...</div></div>';
+async function renderRioContext(container, assetId = null, assetType = null, onAddSeu = null, selectedSeuIds = new Set()) {
+    container.innerHTML = '<div class="bg-white shadow rounded-lg p-6"><div class="text-center py-4 text-gray-500">Loading context data...</div></div>';
     
     try {
         if (!window.db) return;
 
-        const [buildings, vehicles, madeList, mecrSnap, mfcrSnap] = await Promise.all([
+        const [buildings, vehicles, madeList, mecrSnap, mfcrSnap, seuList] = await Promise.all([
             getFsbdList(),
             getVehicleList(),
             getMadeList(),
             window.db.collection('mecr_reports').get(),
-            window.db.collection('mfcr_reports').get()
+            window.db.collection('mfcr_reports').get(),
+            getSeuList()
         ]);
 
         // Filter by LGU
@@ -893,12 +978,12 @@ async function renderRioContext(container) {
         const bldgStats = filteredBuildings.map(b => {
             const stats = calcStats(mecr.filter(r => r.fsbdId === b.id), 'electricity_consumption_kwh');
             return { id: b.id, name: b.name, ...stats };
-        }).sort((a, b) => b.avg - a.avg).slice(0, 5);
+        }).sort((a, b) => b.avg - a.avg).slice(0, 3);
 
         const vehStats = filteredVehicles.map(v => {
             const stats = calcStats(mfcr.filter(r => r.vehicleId === v.id), 'fuel_consumed_liters');
             return { id: v.id, plate: v.plate_number, ...stats };
-        }).sort((a, b) => b.avg - a.avg).slice(0, 5);
+        }).sort((a, b) => b.avg - a.avg).slice(0, 3);
 
         const renderTable = (items, nameKey, unit, type) => `
             <div class="overflow-x-auto">
@@ -920,28 +1005,73 @@ async function renderRioContext(container) {
             </div>`;
 
         // Render as a single card for the column
-        container.className = 'bg-white shadow rounded-lg p-6 border-t-4 border-blue-500 h-full';
-        container.innerHTML = `
+        container.className = 'bg-white shadow rounded-lg p-6 border-t-4 border-blue-500 h-full flex flex-col gap-6';
+        
+        let html = `
             <h3 class="text-lg font-bold text-gray-800 mb-4">Reference Data</h3>
-            <div class="space-y-6">
-                <div>
-                    <h4 class="font-semibold text-gray-700 mb-2">Top Energy Consuming Buildings</h4>
-                    ${renderTable(bldgStats, 'name', 'kWh', 'building')}
-                </div>
-                
-                <div>
-                    <h4 class="font-semibold text-gray-700 mb-2">Top Fuel Consuming Vehicles</h4>
-                    ${renderTable(vehStats, 'plate', 'L', 'vehicle')}
-                </div>
+            <div class="space-y-6">`;
 
-                <div class="pt-4 border-t border-gray-200">
-                    <h4 class="font-semibold text-gray-700 mb-2">Equipment Categories</h4>
-                    <div class="flex flex-wrap gap-2">
-                        ${[...new Set(filteredMade.map(m => m.energy_use_category))].map(c => `<span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">${c}</span>`).join('') || '<span class="text-sm text-gray-500">No equipment recorded</span>'}
-                    </div>
+        if (filteredBuildings.length > 0) {
+            html += `<div>
+                <h4 class="font-semibold text-gray-700 mb-2">Top Energy Consuming Buildings</h4>
+                ${renderTable(bldgStats, 'name', 'kWh', 'building')}
+            </div>`;
+        }
+
+        if (filteredVehicles.length > 0) {
+            html += `<div>
+                <h4 class="font-semibold text-gray-700 mb-2">Top Fuel Consuming Vehicles</h4>
+                ${renderTable(vehStats, 'plate', 'L', 'vehicle')}
+            </div>`;
+        }
+
+        if (filteredMade.length > 0) {
+            html += `<div class="pt-4 border-t border-gray-200">
+                <h4 class="font-semibold text-gray-700 mb-2">Equipment Categories</h4>
+                <div class="flex flex-wrap gap-2">
+                    ${[...new Set(filteredMade.map(m => m.energy_use_category))].map(c => `<span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">${c}</span>`).join('') || '<span class="text-sm text-gray-500">No equipment recorded</span>'}
                 </div>
+            </div>`;
+        }
+
+        // SEU Section
+        html += `<div class="pt-4 border-t border-gray-200 flex-1 flex flex-col min-h-0">
+            <h4 class="font-semibold text-gray-700 mb-2">Identified SEUs</h4>
+            <div class="space-y-2 overflow-y-auto pr-1 max-h-60">`;
+
+        if (assetId) {
+            const assetSeus = seuList.filter(s => (assetType === 'building' && s.fsbdId === assetId) || (assetType === 'vehicle' && s.vehicleId === assetId));
+            
+            if (assetSeus.length > 0) {
+                html += assetSeus.map(s => {
+                    const isSelected = selectedSeuIds.has(s.id);
+                    return `
+                    <div class="border rounded p-3 bg-gray-50 flex justify-between items-start">
+                        <div>
+                            <span class="text-xs font-bold text-indigo-600 block">${s.energy_use_category}</span>
+                            <p class="text-sm text-gray-800">${s.finding_description}</p>
+                            <p class="text-xs text-gray-500 mt-1">Method: ${s.identification_method}</p>
+                        </div>
+                        ${isSelected 
+                            ? '<span class="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Added</span>'
+                            : `<button type="button" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-2 rounded btn-add-ref-seu" data-id="${s.id}">Add</button>`
+                        }
+                    </div>
+                    `;
+                }).join('');
+            } else {
+                html += '<p class="text-sm text-gray-500 italic">No SEUs identified for this asset.</p>';
+            }
+        } else {
+            html += '<p class="text-sm text-gray-500 italic">Select an asset to view SEUs.</p>';
+        }
+
+        html += `</div>
+            <div class="mt-2">
+                <p class="text-xs text-gray-500">Tip: Go to "SEU Identification" to add more findings.</p>
             </div>
-        `;
+        </div>`;
+        container.innerHTML = html;
 
         // Add event listeners for details buttons
         container.querySelectorAll('.btn-details').forEach(btn => {
@@ -960,6 +1090,13 @@ async function renderRioContext(container) {
                     const reports = mfcr.filter(r => r.vehicleId === id);
                     openAssetDetailsModal(asset.plate_number, reports, 'fuel_consumed_liters', 'L');
                 }
+            });
+        });
+
+        // Add event listeners for SEU buttons
+        container.querySelectorAll('.btn-add-ref-seu').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (onAddSeu) onAddSeu(e.target.dataset.id);
             });
         });
     } catch (error) {
@@ -1520,6 +1657,625 @@ async function renderAdmin() {
                 renderRows('table-ppas', ppas, i => i.project_name, () => 'N/A', '#/ppas/edit', deletePpa);
             }
         
+            async function renderSeuPage() {
+                const seuTableBody = document.getElementById('seu-table-body');
+                const equipTableBody = document.getElementById('analysis-equipment-body');
+                const vehicleTableBody = document.getElementById('analysis-vehicle-body');
+
+                if (!currentLguId) {
+                    seuTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">Please select an LGU first.</td></tr>';
+                    return;
+                }
+
+                try {
+                    const [lguSeus, buildings, vehicles, madeList, mfcrSnap, mecrSnap] = await Promise.all([
+                        getSeuList(),
+                        getFsbdList(),
+                        getVehicleList(),
+                        getMadeList(),
+                        window.db.collection('mfcr_reports').get(),
+                        window.db.collection('mecr_reports').get()
+                    ]);
+
+                    // Filter by LGU
+                    const lguBuildings = buildings.filter(b => b.lguId === currentLguId);
+                    const lguVehicles = vehicles.filter(v => v.lguId === currentLguId);
+                    const bldgIds = new Set(lguBuildings.map(b => b.id));
+                    const vehIds = new Set(lguVehicles.map(v => v.id));
+
+                    // Filter SEUs
+                    const filteredSeus = lguSeus.filter(s => bldgIds.has(s.fsbdId) || vehIds.has(s.vehicleId));
+
+                    // Render Registered SEUs
+                    if (filteredSeus.length > 0) {
+                        seuTableBody.innerHTML = filteredSeus.map(s => {
+                            const assetName = s.fsbdId ? (lguBuildings.find(b => b.id === s.fsbdId)?.name || 'Unknown Bldg') : (lguVehicles.find(v => v.id === s.vehicleId)?.plate_number || 'Unknown Vehicle');
+                            return `
+                                <tr>
+                                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm font-medium">${assetName}</td>
+                                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${s.energy_use_category || '-'}</td>
+                                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${s.finding_description}</td>
+                                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${s.identification_method}</td>
+                                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                        <button class="text-red-600 hover:text-red-900 btn-delete-seu" data-id="${s.id}">Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+
+                        // Attach delete listeners
+                        document.querySelectorAll('.btn-delete-seu').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                if (confirm('Delete this SEU finding?')) {
+                                    await deleteSeu(e.target.dataset.id);
+                                    renderSeuPage(); // Reload
+                                }
+                            });
+                        });
+                    } else {
+                        seuTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No SEU findings recorded yet.</td></tr>';
+                    }
+
+                    // --- Top Consumers Chart ---
+                    const mecr = mecrSnap.docs.map(d => d.data()).filter(r => bldgIds.has(r.fsbdId));
+                    const mfcr = mfcrSnap.docs.map(d => d.data()).filter(r => vehIds.has(r.vehicleId));
+
+                    const assetCosts = [];
+                    lguBuildings.forEach(b => {
+                        const cost = mecr.filter(r => r.fsbdId === b.id).reduce((sum, r) => sum + (Number(r.cost_php) || 0), 0);
+                        if(cost > 0) assetCosts.push({ name: b.name, cost, type: 'Building' });
+                    });
+                    lguVehicles.forEach(v => {
+                        const cost = mfcr.filter(r => r.vehicleId === v.id).reduce((sum, r) => sum + (Number(r.cost_php) || 0), 0);
+                        if(cost > 0) assetCosts.push({ name: v.plate_number, cost, type: 'Vehicle' });
+                    });
+
+                    assetCosts.sort((a, b) => b.cost - a.cost);
+                    const topConsumers = assetCosts.slice(0, 10);
+
+                    const ctx = document.getElementById('chart-top-consumers');
+                    if (ctx) {
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: topConsumers.map(c => c.name),
+                                datasets: [{
+                                    label: 'Total Energy Cost (PHP)',
+                                    data: topConsumers.map(c => c.cost),
+                                    backgroundColor: topConsumers.map(c => c.type === 'Building' ? '#4F46E5' : '#0D9488')
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+                    }
+
+                    // --- Equipment Analysis (Calculated) ---
+                    const lguMade = madeList.filter(m => bldgIds.has(m.fsbdId));
+                    const calculatedMade = lguMade.map(m => ({
+                        ...m,
+                        est_monthly_kwh: (m.power_rating_kw || 0) * (m.time_of_use_hours_per_day || 0) * 30 // Assuming 30 days
+                    })).sort((a, b) => b.est_monthly_kwh - a.est_monthly_kwh).slice(0, 10); // Top 10
+
+                    equipTableBody.innerHTML = calculatedMade.map(m => {
+                        const bldg = lguBuildings.find(b => b.id === m.fsbdId);
+                        return `
+                            <tr>
+                                <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm">
+                                    <div class="font-bold text-gray-800">${m.description_of_equipment}</div>
+                                    <div class="text-xs text-gray-500">${bldg ? bldg.name : 'Unknown'} - ${m.location}</div>
+                                </td>
+                                <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-right font-mono">${m.est_monthly_kwh.toLocaleString()} kWh</td>
+                                <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-center">
+                                    <button class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded text-xs font-bold btn-add-seu-equip" data-id="${m.id}">Identify</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('') || '<tr><td colspan="3" class="text-center py-2 text-gray-500">No equipment data found.</td></tr>';
+
+                    // --- Vehicle Analysis (Historical) ---
+                    const vehicleStats = lguVehicles.map(v => {
+                        const reports = mfcr.filter(r => r.vehicleId === v.id);
+                        const totalFuel = reports.reduce((sum, r) => sum + (Number(r.fuel_consumed_liters) || 0), 0);
+                        const avgFuel = reports.length ? totalFuel / reports.length : 0;
+                        return { ...v, avgFuel };
+                    }).filter(v => v.avgFuel > 0).sort((a, b) => b.avgFuel - a.avgFuel).slice(0, 10);
+
+                    vehicleTableBody.innerHTML = vehicleStats.map(v => `
+                        <tr>
+                            <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm">
+                                <div class="font-bold text-gray-800">${v.plate_number}</div>
+                                <div class="text-xs text-gray-500">${v.make} ${v.model}</div>
+                            </td>
+                            <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-right font-mono">${v.avgFuel.toLocaleString(undefined, {maximumFractionDigits: 1})} L</td>
+                            <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-center">
+                                <button class="bg-teal-100 text-teal-700 hover:bg-teal-200 px-2 py-1 rounded text-xs font-bold btn-add-seu-vehicle" data-id="${v.id}">Identify</button>
+                            </td>
+                        </tr>
+                    `).join('') || '<tr><td colspan="3" class="text-center py-2 text-gray-500">No fuel reports found.</td></tr>';
+
+                    // --- Event Listeners for "Identify" ---
+                    document.querySelectorAll('.btn-add-seu-equip').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const m = calculatedMade.find(i => i.id === e.target.dataset.id);
+                            const desc = prompt("Enter SEU Finding Description:", `High consumption equipment: ${m.description_of_equipment}`);
+                            if (desc) {
+                                await createSeu({
+                                    fsbdId: m.fsbdId,
+                                    energy_use_category: m.energy_use_category,
+                                    linkedEquipmentIds: [m.id],
+                                    finding_description: desc,
+                                    identification_method: 'Calculated (Rating * Hours)',
+                                    status: 'Identified'
+                                });
+                                renderSeuPage();
+                            }
+                        });
+                    });
+
+                    document.querySelectorAll('.btn-add-seu-vehicle').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const v = vehicleStats.find(i => i.id === e.target.dataset.id);
+                            const desc = prompt("Enter SEU Finding Description:", `High fuel consumption vehicle: ${v.plate_number}`);
+                            if (desc) {
+                                await createSeu({
+                                    vehicleId: v.id,
+                                    energy_use_category: 'Fuel Consumption',
+                                    finding_description: desc,
+                                    identification_method: 'Historical Average',
+                                    status: 'Identified'
+                                });
+                                renderSeuPage();
+                            }
+                        });
+                    });
+
+                } catch (error) {
+                    console.error("Error rendering SEU page:", error);
+                }
+            }
+
+            async function renderReporting() {
+                const container = document.getElementById('report-container');
+                const printBtn = document.getElementById('btn-print-report');
+                
+                if (printBtn) {
+                    printBtn.addEventListener('click', () => window.print());
+                }
+
+                if (!currentLguId) {
+                    container.innerHTML = '<p class="text-red-500 text-center">Please select an LGU first.</p>';
+                    return;
+                }
+
+                try {
+                    // Fetch Data
+                    const [lgu, buildings, vehicles, rios, ppas, mecrSnap, mfcrSnap, seuSnap] = await Promise.all([
+                        getLguById(currentLguId),
+                        getFsbdList(),
+                        getVehicleList(),
+                        getRioList(),
+                        getPpaList(),
+                        window.db.collection('mecr_reports').get(),
+                        window.db.collection('mfcr_reports').get(),
+                        window.db.collection('seu_findings').get()
+                    ]);
+
+                    // Filter Data
+                    const lguBuildings = buildings.filter(b => b.lguId === currentLguId);
+                    const lguVehicles = vehicles.filter(v => v.lguId === currentLguId);
+                    
+                    const bldgIds = new Set(lguBuildings.map(b => b.id));
+                    const vehIds = new Set(lguVehicles.map(v => v.id));
+
+                    const lguRios = rios.filter(r => bldgIds.has(r.fsbdId) || vehIds.has(r.vehicleId));
+                    
+                    // Filter PPAs based on RIOs
+                    const rioIds = new Set(lguRios.map(r => r.id));
+                    const lguPpas = ppas.filter(p => p.relatedRioIds && p.relatedRioIds.some(id => rioIds.has(id)));
+
+                    const mecr = mecrSnap.docs.map(d => d.data()).filter(r => bldgIds.has(r.fsbdId));
+                    const mfcr = mfcrSnap.docs.map(d => d.data()).filter(r => vehIds.has(r.vehicleId));
+                    const lguSeus = seuSnap.docs.map(d => d.data()).filter(s => bldgIds.has(s.fsbdId) || vehIds.has(s.vehicleId));
+
+                    // Calculations
+                    const totalElectricity = mecr.reduce((sum, r) => sum + (Number(r.electricity_consumption_kwh) || 0), 0);
+                    const totalFuel = mfcr.reduce((sum, r) => sum + (Number(r.fuel_consumed_liters) || 0), 0);
+                    
+                    // Group Consumption by Asset for Drilldown
+                    const mecrByBuilding = {};
+                    mecr.forEach(r => {
+                        if (!mecrByBuilding[r.fsbdId]) mecrByBuilding[r.fsbdId] = [];
+                        mecrByBuilding[r.fsbdId].push(r);
+                    });
+
+                    const mfcrByVehicle = {};
+                    mfcr.forEach(r => {
+                        if (!mfcrByVehicle[r.vehicleId]) mfcrByVehicle[r.vehicleId] = [];
+                        mfcrByVehicle[r.vehicleId].push(r);
+                    });
+
+                    // Date formatting
+                    const dateStr = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                    // --- CHART DATA PREPARATION ---
+                    const chartColors = [
+                        '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
+                        '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
+                    ];
+
+                    // 1. Shares (Pie Charts)
+                    const elecShareLabels = lguBuildings.map(b => b.name);
+                    const elecShareData = lguBuildings.map(b => {
+                        return mecr.filter(r => r.fsbdId === b.id).reduce((sum, r) => sum + (Number(r.electricity_consumption_kwh)||0), 0);
+                    });
+
+                    const fuelShareLabels = lguVehicles.map(v => v.plate_number);
+                    const fuelShareData = lguVehicles.map(v => {
+                        return mfcr.filter(r => r.vehicleId === v.id).reduce((sum, r) => sum + (Number(r.fuel_consumed_liters)||0), 0);
+                    });
+
+                    // 2. Trends (Stacked Bar)
+                    const getPeriod = (r) => `${r.reporting_year}-${String(r.reporting_month).padStart(2, '0')}`;
+                    
+                    // Electricity Trends
+                    const elecPeriods = [...new Set(mecr.map(getPeriod))].sort();
+                    const elecTrendDatasets = lguBuildings.map((b, i) => ({
+                        label: b.name,
+                        data: elecPeriods.map(p => {
+                            const match = mecr.find(r => r.fsbdId === b.id && getPeriod(r) === p);
+                            return match ? (Number(match.electricity_consumption_kwh)||0) : 0;
+                        }),
+                        backgroundColor: chartColors[i % chartColors.length]
+                    }));
+
+                    // Fuel Trends
+                    const fuelPeriods = [...new Set(mfcr.map(getPeriod))].sort();
+                    const fuelTrendDatasets = lguVehicles.map((v, i) => ({
+                        label: v.plate_number,
+                        data: fuelPeriods.map(p => {
+                            const match = mfcr.find(r => r.vehicleId === v.id && getPeriod(r) === p);
+                            return match ? (Number(match.fuel_consumed_liters)||0) : 0;
+                        }),
+                        backgroundColor: chartColors[i % chartColors.length]
+                    }));
+
+                    // 3. Statuses (Doughnut/Bar)
+                    const rioStatuses = ['Identified', 'Planned', 'In Progress', 'Completed', 'Implemented'];
+                    const rioStatusData = rioStatuses.map(s => lguRios.filter(r => r.status === s).length);
+                    
+                    const ppaStatuses = ['Planned', 'Ongoing', 'Completed'];
+                    const ppaStatusData = ppaStatuses.map(s => lguPpas.filter(p => p.status === s).length);
+
+                    // 4. Financials (Bar Charts)
+                    const rioPriorities = ['High', 'Medium', 'Low'];
+                    const rioCostByPriority = rioPriorities.map(p => lguRios.filter(r => r.priority === p).reduce((sum, r) => sum + (r.estimated_cost_php || 0), 0));
+                    const rioSavingsByPriority = rioPriorities.map(p => lguRios.filter(r => r.priority === p).reduce((sum, r) => sum + (r.estimated_savings_php || 0), 0));
+
+                    const ppaEstCostByStatus = ppaStatuses.map(s => lguPpas.filter(p => p.status === s).reduce((sum, p) => sum + (p.estimated_cost_php || 0), 0));
+                    const ppaActualCostByStatus = ppaStatuses.map(s => lguPpas.filter(p => p.status === s).reduce((sum, p) => sum + (p.actual_cost_php || 0), 0));
+
+                    // 5. SEU Distribution
+                    const seuCategories = {};
+                    lguSeus.forEach(s => {
+                        const cat = s.energy_use_category || 'Uncategorized';
+                        seuCategories[cat] = (seuCategories[cat] || 0) + 1;
+                    });
+                    const seuLabels = Object.keys(seuCategories);
+                    const seuData = Object.values(seuCategories);
+
+                    // Helper to render charts after HTML injection
+                    const initCharts = () => {
+                        const commonOptions = { animation: false, responsive: true, maintainAspectRatio: false };
+                        
+                        new Chart(document.getElementById('chart-elec-share'), { type: 'pie', data: { labels: elecShareLabels, datasets: [{ data: elecShareData, backgroundColor: chartColors }] }, options: commonOptions });
+                        new Chart(document.getElementById('chart-fuel-share'), { type: 'pie', data: { labels: fuelShareLabels, datasets: [{ data: fuelShareData, backgroundColor: chartColors }] }, options: commonOptions });
+                        
+                        new Chart(document.getElementById('chart-elec-trend'), { type: 'bar', data: { labels: elecPeriods, datasets: elecTrendDatasets }, options: { ...commonOptions, scales: { x: { stacked: true }, y: { stacked: true } } } });
+                        new Chart(document.getElementById('chart-fuel-trend'), { type: 'bar', data: { labels: fuelPeriods, datasets: fuelTrendDatasets }, options: { ...commonOptions, scales: { x: { stacked: true }, y: { stacked: true } } } });
+
+                        new Chart(document.getElementById('chart-rio-status'), { type: 'doughnut', data: { labels: rioStatuses, datasets: [{ data: rioStatusData, backgroundColor: ['#9CA3AF', '#FCD34D', '#60A5FA', '#34D399', '#10B981'] }] }, options: commonOptions });
+                        new Chart(document.getElementById('chart-ppa-status'), { type: 'doughnut', data: { labels: ppaStatuses, datasets: [{ data: ppaStatusData, backgroundColor: ['#FCD34D', '#60A5FA', '#10B981'] }] }, options: commonOptions });
+                        
+                        // Financial Charts
+                        new Chart(document.getElementById('chart-rio-finance'), { type: 'bar', data: { labels: rioPriorities, datasets: [{ label: 'Est. Cost', data: rioCostByPriority, backgroundColor: '#EF4444' }, { label: 'Est. Savings', data: rioSavingsByPriority, backgroundColor: '#10B981' }] }, options: commonOptions });
+                        new Chart(document.getElementById('chart-ppa-finance'), { type: 'bar', data: { labels: ppaStatuses, datasets: [{ label: 'Est. Cost', data: ppaEstCostByStatus, backgroundColor: '#F59E0B' }, { label: 'Actual Cost', data: ppaActualCostByStatus, backgroundColor: '#3B82F6' }] }, options: commonOptions });
+                        
+                        // SEU Chart
+                        new Chart(document.getElementById('chart-seu-dist'), { type: 'pie', data: { labels: seuLabels, datasets: [{ data: seuData, backgroundColor: chartColors }] }, options: commonOptions });
+                    };
+
+                    // HTML Generation
+                    container.innerHTML = `
+                        <div class="max-w-4xl mx-auto font-serif text-gray-900">
+                            <!-- COVER PAGE -->
+                            <div class="flex flex-col justify-center items-center min-h-[90vh] text-center break-after-page" style="page-break-after: always;">
+                                <div class="mb-12 pt-20">
+                                    <h1 class="text-4xl font-bold uppercase tracking-widest mb-4">Compliance Report</h1>
+                                    <h2 class="text-2xl font-semibold text-gray-700">Energy Efficiency & Conservation Act (RA 11285)</h2>
+                                </div>
+                                
+                                <div class="mb-16 flex-grow flex flex-col justify-center">
+                                    <h3 class="text-5xl font-bold text-blue-900 mb-4">${lgu.name || 'LGU Name'}</h3>
+                                    <p class="text-xl text-gray-600">${lgu.region || ''}, ${lgu.province || ''}</p>
+                                </div>
+
+                                <div class="mt-auto mb-20">
+                                    <p class="text-lg text-gray-500">Generated on</p>
+                                    <p class="text-2xl font-bold">${dateStr}</p>
+                                </div>
+                            </div>
+
+                            <!-- Executive Summary -->
+                            <div class="mb-8 pt-8">
+                                <h3 class="text-lg font-bold uppercase border-b border-gray-300 mb-4 pb-1">1. Executive Summary</h3>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p><span class="font-semibold">Region:</span> ${lgu.region || '-'}</p>
+                                        <p><span class="font-semibold">Province:</span> ${lgu.province || '-'}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p><span class="font-semibold">Head of LGU:</span> ${lgu.head_of_lgu || '-'}</p>
+                                        <p><span class="font-semibold">Contact:</span> ${lgu.email || '-'}</p>
+                                    </div>
+                                </div>
+                                <div class="mt-6 grid grid-cols-2 gap-4">
+                                    <div class="bg-gray-50 p-4 rounded border">
+                                        <p class="text-xs text-gray-500 uppercase">Total Electricity Recorded</p>
+                                        <p class="text-xl font-bold text-indigo-700">${totalElectricity.toLocaleString()} kWh</p>
+                                    </div>
+                                    <div class="bg-gray-50 p-4 rounded border">
+                                        <p class="text-xs text-gray-500 uppercase">Total Fuel Recorded</p>
+                                        <p class="text-xl font-bold text-teal-700">${totalFuel.toLocaleString()} Liters</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Asset Inventory -->
+                            <div class="mb-8">
+                                <h3 class="text-lg font-bold uppercase border-b border-gray-300 mb-4 pb-1">2. Asset Inventory</h3>
+                                <p class="text-sm text-gray-600 mb-4">Summary of registered government-owned assets.</p>
+                                <div class="grid grid-cols-2 gap-8">
+                                    <div>
+                                        <h4 class="font-bold text-sm mb-2">Buildings (${lguBuildings.length})</h4>
+                                        <ul class="list-disc list-inside text-sm text-gray-700">
+                                            ${lguBuildings.slice(0, 5).map(b => `<li>${b.name} <span class="text-xs text-gray-500">(${b.fsbd_type})</span></li>`).join('')}
+                                            ${lguBuildings.length > 5 ? `<li class="italic text-gray-500">...and ${lguBuildings.length - 5} more</li>` : ''}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-sm mb-2">Vehicles (${lguVehicles.length})</h4>
+                                        <ul class="list-disc list-inside text-sm text-gray-700">
+                                            ${lguVehicles.slice(0, 5).map(v => `<li>${v.plate_number} <span class="text-xs text-gray-500">(${v.model})</span></li>`).join('')}
+                                            ${lguVehicles.length > 5 ? `<li class="italic text-gray-500">...and ${lguVehicles.length - 5} more</li>` : ''}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Consumption Analysis -->
+                            <div class="mb-8 break-before-page" style="page-break-before: always;">
+                                <h3 class="text-lg font-bold uppercase border-b border-gray-300 mb-4 pb-1">3. Consumption Analysis</h3>
+                                
+                                <!-- Charts Row 1: Shares -->
+                                <div class="grid grid-cols-2 gap-8 mb-8 break-inside-avoid">
+                                    <div class="flex flex-col items-center">
+                                        <h4 class="font-bold text-sm text-center mb-2">Electricity Share by Building</h4>
+                                        <div class="relative h-64 w-full"><canvas id="chart-elec-share"></canvas></div>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <h4 class="font-bold text-sm text-center mb-2">Fuel Share by Vehicle</h4>
+                                        <div class="relative h-64 w-full"><canvas id="chart-fuel-share"></canvas></div>
+                                    </div>
+                                </div>
+
+                                <!-- Charts Row 2: Trends -->
+                                <div class="mb-8 break-inside-avoid">
+                                    <h4 class="font-bold text-sm text-center mb-2">Electricity Consumption Trend (Stacked)</h4>
+                                    <div class="relative h-80 w-full"><canvas id="chart-elec-trend"></canvas></div>
+                                </div>
+
+                                <div class="mb-8 break-inside-avoid">
+                                    <h4 class="font-bold text-sm text-center mb-2">Fuel Consumption Trend (Stacked)</h4>
+                                    <div class="relative h-80 w-full"><canvas id="chart-fuel-trend"></canvas></div>
+                                </div>
+                                
+                                <h4 class="font-bold text-md text-indigo-800 mb-3 mt-6 border-t pt-4">3.1 Detailed Electricity Reports</h4>
+                                ${lguBuildings.map(b => {
+                                    const reports = mecrByBuilding[b.id] || [];
+                                    if (reports.length === 0) return '';
+                                    // Sort by date
+                                    reports.sort((x, y) => (x.reporting_year - y.reporting_year) || (x.reporting_month - y.reporting_month));
+                                    return `
+                                        <div class="mb-6 break-inside-avoid">
+                                            <p class="font-bold text-sm mb-1">${b.name} <span class="font-normal text-gray-500">(${b.fsbd_type})</span></p>
+                                            <table class="w-full text-xs text-left border border-gray-200">
+                                                <thead class="bg-gray-50">
+                                                    <tr>
+                                                        ${reports.map(r => `<th class="p-1 border text-center">${r.reporting_year}-${String(r.reporting_month).padStart(2,'0')}</th>`).join('')}
+                                                        <th class="p-1 border text-center font-bold">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        ${reports.map(r => `<td class="p-1 border text-center">${r.electricity_consumption_kwh.toLocaleString()}</td>`).join('')}
+                                                        <td class="p-1 border text-center font-bold">${reports.reduce((s,r)=>s+r.electricity_consumption_kwh,0).toLocaleString()} kWh</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    `;
+                                }).join('') || '<p class="text-sm italic text-gray-500">No electricity reports available.</p>'}
+
+                                <h4 class="font-bold text-md text-teal-800 mb-3 mt-8">3.2 Detailed Fuel Reports</h4>
+                                ${lguVehicles.map(v => {
+                                    const reports = mfcrByVehicle[v.id] || [];
+                                    if (reports.length === 0) return '';
+                                    reports.sort((x, y) => (x.reporting_year - y.reporting_year) || (x.reporting_month - y.reporting_month));
+                                    return `
+                                        <div class="mb-6 break-inside-avoid">
+                                            <p class="font-bold text-sm mb-1">${v.plate_number} <span class="font-normal text-gray-500">(${v.make} ${v.model})</span></p>
+                                            <table class="w-full text-xs text-left border border-gray-200">
+                                                <thead class="bg-gray-50">
+                                                    <tr>
+                                                        ${reports.map(r => `<th class="p-1 border text-center">${r.reporting_year}-${String(r.reporting_month).padStart(2,'0')}</th>`).join('')}
+                                                        <th class="p-1 border text-center font-bold">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        ${reports.map(r => `<td class="p-1 border text-center">${r.fuel_consumed_liters.toLocaleString()}</td>`).join('')}
+                                                        <td class="p-1 border text-center font-bold">${reports.reduce((s,r)=>s+r.fuel_consumed_liters,0).toLocaleString()} L</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    `;
+                                }).join('') || '<p class="text-sm italic text-gray-500">No fuel reports available.</p>'}
+                            </div>
+
+                            <!-- SEU Findings -->
+                            <div class="mb-8 break-before-page" style="page-break-before: always;">
+                                <h3 class="text-lg font-bold uppercase border-b border-gray-300 mb-4 pb-1">4. Significant Energy Use (SEU)</h3>
+                                
+                                <!-- SEU Chart -->
+                                <div class="mb-8 break-inside-avoid flex flex-col items-center">
+                                    <h4 class="font-bold text-sm text-center mb-2">SEU Distribution by Category</h4>
+                                    <div class="relative h-64 w-full max-w-md"><canvas id="chart-seu-dist"></canvas></div>
+                                </div>
+
+                                <p class="text-sm text-gray-600 mb-4">Identified areas of significant energy consumption.</p>
+                                <table class="w-full text-sm text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-gray-400">
+                                            <th class="py-1">Asset</th>
+                                            <th class="py-1">Category</th>
+                                            <th class="py-1">Description</th>
+                                            <th class="py-1">Method</th>
+                                            <th class="py-1">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${lguSeus.map(s => {
+                                            const asset = s.fsbdId ? lguBuildings.find(b => b.id === s.fsbdId) : lguVehicles.find(v => v.id === s.vehicleId);
+                                            const assetName = asset ? (asset.name || asset.plate_number) : 'Unknown Asset';
+                                            return `
+                                            <tr class="border-b border-gray-200">
+                                                <td class="py-1 font-medium">${assetName}</td>
+                                                <td class="py-1">${s.energy_use_category || '-'}</td>
+                                                <td class="py-1">${s.finding_description || '-'}</td>
+                                                <td class="py-1">${s.identification_method || '-'}</td>
+                                                <td class="py-1 text-xs">${s.status || '-'}</td>
+                                            </tr>
+                                            `;
+                                        }).join('') || '<tr><td colspan="5" class="italic text-gray-500 py-1">No SEU findings recorded.</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Recommendations & Projects -->
+                            <div class="mb-8 break-before-page" style="page-break-before: always;">
+                                <h3 class="text-lg font-bold uppercase border-b border-gray-300 mb-4 pb-1">5. Action Plan</h3>
+                                
+                                <!-- Charts: Status Overview -->
+                                <div class="grid grid-cols-2 gap-8 mb-8 break-inside-avoid">
+                                    <div class="flex flex-col items-center">
+                                        <h4 class="font-bold text-sm text-center mb-2">RIO Status Distribution</h4>
+                                        <div class="relative h-64 w-full"><canvas id="chart-rio-status"></canvas></div>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <h4 class="font-bold text-sm text-center mb-2">PPA Status Distribution</h4>
+                                        <div class="relative h-64 w-full"><canvas id="chart-ppa-status"></canvas></div>
+                                    </div>
+                                </div>
+
+                                <!-- Charts: Financial Overview -->
+                                <div class="grid grid-cols-2 gap-8 mb-8 break-inside-avoid">
+                                    <div class="flex flex-col items-center">
+                                        <h4 class="font-bold text-sm text-center mb-2">RIO Financial Impact (by Priority)</h4>
+                                        <div class="relative h-64 w-full"><canvas id="chart-rio-finance"></canvas></div>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <h4 class="font-bold text-sm text-center mb-2">PPA Budget Performance (by Status)</h4>
+                                        <div class="relative h-64 w-full"><canvas id="chart-ppa-finance"></canvas></div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-6">
+                                    <h4 class="font-bold text-sm mb-2">5.1 Recommendations List</h4>
+                                    <table class="w-full text-sm text-left border-collapse">
+                                        <thead>
+                                            <tr class="border-b border-gray-400">
+                                                <th class="py-1">Action</th>
+                                                <th class="py-1">Priority</th>
+                                                <th class="py-1">Status</th>
+                                                <th class="py-1 text-right">Est. Cost</th>
+                                                <th class="py-1 text-right">Est. Savings</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${lguRios.map(r => `
+                                                <tr class="border-b border-gray-200">
+                                                    <td class="py-1">${r.proposed_action}</td>
+                                                    <td class="py-1"><span class="text-xs px-2 py-0.5 rounded ${r.priority==='High'?'bg-red-100':(r.priority==='Medium'?'bg-yellow-100':'bg-blue-100')}">${r.priority}</span></td>
+                                                    <td class="py-1 text-xs">${r.status}</td>
+                                                    <td class="py-1 text-right">₱${(r.estimated_cost_php||0).toLocaleString()}</td>
+                                                    <td class="py-1 text-right">₱${(r.estimated_savings_php||0).toLocaleString()}</td>
+                                                </tr>
+                                            `).join('') || '<tr><td colspan="5" class="italic text-gray-500 py-1">No recommendations recorded.</td></tr>'}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div>
+                                    <h4 class="font-bold text-sm mb-2">5.2 Projects List</h4>
+                                    <table class="w-full text-sm text-left border-collapse">
+                                        <thead>
+                                            <tr class="border-b border-gray-400">
+                                                <th class="py-1">Project Name</th>
+                                                <th class="py-1">Status</th>
+                                                <th class="py-1 text-right">Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${lguPpas.map(p => `
+                                                <tr class="border-b border-gray-200">
+                                                    <td class="py-1">${p.project_name}</td>
+                                                    <td class="py-1 text-xs">${p.status}</td>
+                                                    <td class="py-1 text-right">₱${(p.actual_cost_php || p.estimated_cost_php || 0).toLocaleString()}</td>
+                                                </tr>
+                                            `).join('') || '<tr><td colspan="3" class="italic text-gray-500 py-1">No projects recorded.</td></tr>'}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Sign Off -->
+                            <div class="mt-16 pt-8 border-t border-gray-800 break-inside-avoid">
+                                <div class="grid grid-cols-2 gap-16">
+                                    <div class="text-center">
+                                        <div class="border-b border-black mb-2 h-8"></div>
+                                        <p class="font-bold text-sm">Prepared By</p>
+                                        <p class="text-xs text-gray-500">EEC Officer</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="border-b border-black mb-2 h-8"></div>
+                                        <p class="font-bold text-sm">Approved By</p>
+                                        <p class="text-xs text-gray-500">Local Chief Executive</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Initialize Charts
+                    initCharts();
+
+                } catch (error) {
+                    console.error("Error generating report:", error);
+                    container.innerHTML = '<p class="text-red-500 text-center">Error loading report data.</p>';
+                }
+            }
+
             // --- INITIALIZATION ---
             document.addEventListener('DOMContentLoaded', async () => {
                 window.addEventListener('hashchange', handleRouting);
@@ -1546,6 +2302,7 @@ async function renderAdmin() {
                     initRioForm,
                     renderPpaList,
                     initPpaForm,
-                    renderAdmin
+                    renderAdmin,
+                    renderReporting
                 };
             }

@@ -1,0 +1,51 @@
+<div class="bg-white rounded-lg shadow-lg p-6">
+    <div class="flex justify-between items-center mb-6 no-print">
+        <h2 class="text-2xl font-bold text-gray-800">Compliance Report Preview</h2>
+        <button id="btn-print-report" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Print / Save as PDF
+        </button>
+    </div>
+
+    <div id="report-container" class="border border-gray-200 p-8 bg-white min-h-screen print:border-0 print:p-0 print:shadow-none">
+        <div class="text-center py-10 text-gray-500">Loading report data...</div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #app-content, #app-content * {
+            visibility: visible;
+        }
+        #app-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: white;
+            overflow: visible !important;
+        }
+        .no-print, aside, header {
+            display: none !important;
+        }
+        #report-container {
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            width: 100% !important;
+        }
+        /* Ensure background colors print */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .break-after-page {
+            page-break-after: always;
+        }
+    }
+</style>
