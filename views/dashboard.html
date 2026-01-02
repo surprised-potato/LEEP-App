@@ -1,0 +1,59 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Dashboard</h1>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Total Buildings</h5>
+                <p class="card-text fs-4" id="stats-total-buildings">...</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Total Vehicles</h5>
+                <p class="card-text fs-4" id="stats-total-vehicles">...</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">High Priority RIOs</h5>
+                <p class="card-text fs-4" id="stats-high-rios">...</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Ongoing Projects</h5>
+                <p class="card-text fs-4" id="stats-ongoing-ppas">...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Monthly Electricity Consumption (kWh)</div>
+            <div class="card-body">
+                <canvas id="electricityChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Monthly Fuel Consumption (Liters)</div>
+            <div class="card-body">
+                <canvas id="fuelChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>

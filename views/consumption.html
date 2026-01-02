@@ -1,0 +1,107 @@
+<h1>Consumption Reports</h1>
+<p>Select an asset to view and add monthly consumption reports.</p>
+
+<div class="accordion" id="consumptionAccordion">
+    <!-- Section 1: Monthly Electricity Consumption (MECR) -->
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingMecr">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMecr" aria-expanded="true" aria-controls="collapseMecr">
+                Electricity Consumption for Buildings (MECR)
+            </button>
+        </h2>
+        <div id="collapseMecr" class="accordion-collapse collapse show" aria-labelledby="headingMecr" data-bs-parent="#consumptionAccordion">
+            <div class="accordion-body">
+                <!-- MECR Content -->
+                <div class="mb-3">
+                    <label for="mecrBuildingSelect" class="form-label">Select a Building</label>
+                    <select class="form-select" id="mecrBuildingSelect">
+                        <option selected>Choose...</option>
+                        <!-- Buildings will be populated here -->
+                    </select>
+                </div>
+
+                <div id="mecr-content-area" class="d-none">
+                    <hr>
+                    <h4>Add New Electricity Report</h4>
+                    <form id="mecr-form" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="mecr-year" class="form-label">Year</label>
+                            <input type="number" class="form-control" id="mecr-year" placeholder="YYYY" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="mecr-month" class="form-label">Month</label>
+                            <input type="number" class="form-control" id="mecr-month" placeholder="MM" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="mecr-kwh" class="form-label">Consumption (kWh)</label>
+                            <input type="number" class="form-control" id="mecr-kwh" required>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Add Report</button>
+                        </div>
+                    </form>
+                    <hr>
+                    <h4>Existing Reports</h4>
+                    <table class="table table-sm">
+                        <thead><tr><th>Year</th><th>Month</th><th>kWh</th></tr></thead>
+                        <tbody id="mecr-table-body"></tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Monthly Fuel Consumption (MFCR) -->
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingMfcr">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMfcr" aria-expanded="false" aria-controls="collapseMfcr">
+                Fuel Consumption for Vehicles (MFCR)
+            </button>
+        </h2>
+        <div id="collapseMfcr" class="accordion-collapse collapse" aria-labelledby="headingMfcr" data-bs-parent="#consumptionAccordion">
+            <div class="accordion-body">
+                <!-- MFCR Content -->
+                <div class="mb-3">
+                    <label for="mfcrVehicleSelect" class="form-label">Select a Vehicle</label>
+                    <select class="form-select" id="mfcrVehicleSelect">
+                        <option selected>Choose...</option>
+                        <!-- Vehicles will be populated here -->
+                    </select>
+                </div>
+
+                <div id="mfcr-content-area" class="d-none">
+                    <hr>
+                    <h4>Add New Fuel Report</h4>
+                    <form id="mfcr-form" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="mfcr-year" class="form-label">Year</label>
+                            <input type="number" class="form-control" id="mfcr-year" placeholder="YYYY" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="mfcr-month" class="form-label">Month</label>
+                            <input type="number" class="form-control" id="mfcr-month" placeholder="MM" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="mfcr-liters" class="form-label">Consumption (Liters)</label>
+                            <input type="number" class="form-control" id="mfcr-liters" required>
+                        </div>
+                        <div class="col-md-3">
+                             <label for="mfcr-distance" class="form-label">Distance (KM)</label>
+                            <input type="number" class="form-control" id="mfcr-distance">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Add Report</button>
+                        </div>
+                    </form>
+                    <hr>
+                    <h4>Existing Reports</h4>
+                    <table class="table table-sm">
+                        <thead><tr><th>Year</th><th>Month</th><th>Liters</th><th>Distance (km)</th></tr></thead>
+                        <tbody id="mfcr-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

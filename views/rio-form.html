@@ -1,0 +1,61 @@
+<h1>Recommendation Form</h1>
+
+<form id="rio-form">
+    <input type="hidden" id="rio-id">
+
+    <div class="mb-3">
+        <label for="proposed_action" class="form-label">Proposed Action</label>
+        <textarea class="form-control" id="proposed_action" rows="3" required></textarea>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="assetType" class="form-label">Asset Type</label>
+            <select class="form-select" id="assetType">
+                <option selected value="">Choose type...</option>
+                <option value="building">Building (FSBD)</option>
+                <option value="vehicle">Vehicle</option>
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="assetId" class="form-label">Select Asset</label>
+            <select class="form-select" id="assetId" disabled>
+                <option>Please select an asset type first</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="priority" class="form-label">Priority</label>
+            <select class="form-select" id="priority">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" id="status">
+                <option value="Identified" selected>Identified</option>
+                <option value="Planned">Planned</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="estimated_cost_php" class="form-label">Estimated Cost (PHP)</label>
+            <input type="number" class="form-control" id="estimated_cost_php">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="estimated_savings_php" class="form-label">Estimated Savings (PHP)</label>
+            <input type="number" class="form-control" id="estimated_savings_php">
+        </div>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="#/rios" class="btn btn-secondary">Cancel</a>
+</form>

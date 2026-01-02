@@ -1,0 +1,44 @@
+<h1>Equipment (MADE) Form</h1>
+
+<form id="made-form">
+    <!-- Hidden input for document ID during edits -->
+    <input type="hidden" id="made-id">
+
+    <div class="mb-3">
+        <label for="fsbdId" class="form-label">Building (FSBD)</label>
+        <select class="form-select" id="fsbdId" required>
+            <option selected disabled value="">Choose a building...</option>
+            <!-- Options will be populated dynamically -->
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="description_of_equipment" class="form-label">Equipment Description</label>
+        <input type="text" class="form-control" id="description_of_equipment" required>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="energy_use_category" class="form-label">Energy Use Category</label>
+            <input type="text" class="form-control" id="energy_use_category" placeholder="e.g., ACU, Lighting">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="location" class="form-label">Location</label>
+            <input type="text" class="form-control" id="location" placeholder="e.g., Room 101">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="power_rating_kw" class="form-label">Power Rating (kW)</label>
+            <input type="number" step="0.01" class="form-control" id="power_rating_kw">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="time_of_use_hours_per_day" class="form-label">Hours of Use per Day</label>
+            <input type="number" step="0.1" class="form-control" id="time_of_use_hours_per_day">
+        </div>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="#/made" class="btn btn-secondary">Cancel</a>
+</form>

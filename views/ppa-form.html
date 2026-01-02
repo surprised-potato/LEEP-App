@@ -1,0 +1,43 @@
+<h1>Project (PPA) Form</h1>
+
+<form id="ppa-form">
+    <input type="hidden" id="ppa-id">
+
+    <div class="mb-3">
+        <label for="project_name" class="form-label">Project Name</label>
+        <input type="text" class="form-control" id="project_name" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="relatedRioIds" class="form-label">Related Recommendations (RIOs)</label>
+        <select class="form-select" id="relatedRioIds" multiple size="5">
+            <!-- RIOs will be populated here -->
+        </select>
+        <div class="form-text">Hold Ctrl or Cmd to select multiple items.</div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" id="status">
+                <option value="Planned" selected>Planned</option>
+                <option value="Ongoing">Ongoing</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="estimated_cost_php" class="form-label">Estimated Cost (PHP)</label>
+            <input type="number" class="form-control" id="estimated_cost_php">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="actual_cost_php" class="form-label">Actual Cost (PHP)</label>
+            <input type="number" class="form-control" id="actual_cost_php">
+        </div>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="#/ppas" class="btn btn-secondary">Cancel</a>
+</form>

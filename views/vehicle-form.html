@@ -1,0 +1,40 @@
+<h1>Vehicle Form</h1>
+
+<form id="vehicle-form">
+    <!-- Hidden input for document ID during edits -->
+    <input type="hidden" id="vehicle-id">
+
+    <div class="mb-3">
+        <label for="plate_number" class="form-label">Plate Number</label>
+        <input type="text" class="form-control" id="plate_number" required>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="make" class="form-label">Make</label>
+            <input type="text" class="form-control" id="make">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="model" class="form-label">Model</label>
+            <input type="text" class="form-control" id="model">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="year_model" class="form-label">Year Model</label>
+            <input type="number" class="form-control" id="year_model">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="fuel_type" class="form-label">Fuel Type</label>
+            <select class="form-select" id="fuel_type">
+                <option selected>Choose...</option>
+                <option value="Gasoline">Gasoline</option>
+                <option value="Diesel">Diesel</option>
+            </select>
+        </div>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="#/vehicles" class="btn btn-secondary">Cancel</a>
+</form>

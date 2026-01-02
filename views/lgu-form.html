@@ -1,0 +1,34 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 id="form-title">Add New LGU</h2>
+            </div>
+            <div class="card-body">
+                <form id="lgu-form">
+                    <input type="hidden" id="lgu-id">
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">LGU Name</label>
+                        <input type="text" class="form-control" id="name" required placeholder="e.g., City of Manila">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="region" class="form-label">Region</label>
+                        <input type="text" class="form-control" id="region" placeholder="e.g., NCR">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="province" class="form-label">Province</label>
+                        <input type="text" class="form-control" id="province" placeholder="e.g., Metro Manila">
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="#/lgus" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save LGU</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
