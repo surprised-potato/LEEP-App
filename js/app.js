@@ -37,6 +37,26 @@ async function initLguSelector() {
 async function handleRouting() {
     if (typeof location !== 'undefined') {
         const path = location.hash.slice(1) || '/dashboard';
+        const fullHash = location.hash || '#/dashboard';
+
+        // Update Sidebar Active State
+        const navLinks = document.querySelectorAll('aside nav a');
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            let isActive = false;
+            
+            if (href === '#/dashboard') isActive = (fullHash === '#/dashboard' || fullHash === '');
+            else isActive = fullHash.startsWith(href);
+
+            if (isActive) {
+                link.classList.remove('hover:bg-gray-700', 'hover:text-white');
+                link.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-700', 'text-white', 'shadow-md');
+            } else {
+                link.classList.add('hover:bg-gray-700', 'hover:text-white');
+                link.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-indigo-700', 'text-white', 'shadow-md');
+            }
+        });
+
         const parts = path.split('/');
         
         let viewPath = '';
@@ -140,6 +160,18 @@ async function handleRouting() {
                     if (myLoadId !== currentLoadId) return;
 
                     appContent.innerHTML = html;
+
+                    // Apply gradient style to headers dynamically for views not manually updated
+                    appContent.querySelectorAll('.bg-gray-50.border-b.border-gray-200').forEach(header => {
+                        if (header.querySelector('h1, h2, h3')) {
+                            header.classList.remove('bg-gray-50');
+                            header.classList.add('hero-header');
+                            const title = header.querySelector('h1, h2, h3');
+                            if (title) {
+                                title.classList.remove('text-gray-800');
+                            }
+                        }
+                    });
                     
                     if (onContentReady) {
                         await onContentReady(myLoadId); 
@@ -946,8 +978,8 @@ function openAssetDetailsModal(title, reports, valueKey, unit, madeItems = []) {
     modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center';
     modal.innerHTML = `
         <div class="relative border w-full max-w-4xl shadow-lg rounded-lg bg-white m-4 overflow-hidden">
-            <div class="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-indigo-700">
-                <h3 class="text-xl font-bold text-white">Details: ${title}</h3>
+            <div class="flex justify-between items-center px-6 py-4 border-b hero-header">
+                <h3 class="text-xl font-bold">Details: ${title}</h3>
                 <button class="text-white hover:text-gray-200 text-2xl font-bold leading-none" onclick="document.getElementById('asset-detail-modal').remove()">&times;</button>
             </div>
             
@@ -1089,8 +1121,8 @@ async function initPpaForm(docId = null) {
                 const detailsCard = document.createElement('div');
                 detailsCard.className = 'bg-white shadow-md rounded-lg overflow-hidden h-full border-t-4 border-indigo-500 flex flex-col';
                 detailsCard.innerHTML = `
-                    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-xl font-bold text-white">Selected RIO Details</h2>
+                    <div class="hero-header px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-xl font-bold">Selected RIO Details</h2>
                     </div>
                     <div class="p-6 space-y-4 overflow-y-auto flex-1" id="rio-details-content">
                         <p class="text-gray-500 text-center italic">Select one or more RIOs to view details.</p>

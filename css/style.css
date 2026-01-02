@@ -1,1 +1,9 @@
 /* Custom Styles */
+.hero-header {
+    background: linear-gradient(to right, #2563eb, #4338ca); /* blue-600 to indigo-700 */
+    color: white;
+}
+
+.hero-header h1, .hero-header h2, .hero-header h3, .hero-header button {
+    color: white !important;
+}
