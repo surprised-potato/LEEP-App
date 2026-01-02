@@ -470,17 +470,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 async function renderMecrReports(buildingId) {
                     const reports = await getMecrReports(buildingId);
                     mecrTableBody.innerHTML = reports.length > 0
-                        ? reports.map(r => `<tr><td>${r.reporting_year}</td><td>${r.reporting_month}</td><td>${r.electricity_consumption_kwh}</td></tr>`).join('')
-                        : '<tr><td colspan="3" class="text-center">No reports found.</td></tr>';
+                        ? reports.map(r => `<tr>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.reporting_year}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.reporting_month}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.electricity_consumption_kwh}</td>
+                        </tr>`).join('')
+                        : '<tr><td colspan="3" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">No reports found.</td></tr>';
                 }
 
                 mecrBuildingSelect.addEventListener('change', async () => {
                     const selectedBuildingId = mecrBuildingSelect.value;
                     if (selectedBuildingId) {
-                        mecrContentArea.classList.remove('d-none');
+                        mecrContentArea.classList.remove('hidden');
                         await renderMecrReports(selectedBuildingId);
                     } else {
-                        mecrContentArea.classList.add('d-none');
+                        mecrContentArea.classList.add('hidden');
                     }
                 });
 
@@ -517,17 +521,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 async function renderMfcrReports(vehicleId) {
                     const reports = await getMfcrReports(vehicleId);
                     mfcrTableBody.innerHTML = reports.length > 0
-                        ? reports.map(r => `<tr><td>${r.reporting_year}</td><td>${r.reporting_month}</td><td>${r.fuel_consumed_liters}</td><td>${r.distance_traveled_km || 'N/A'}</td></tr>`).join('')
-                        : '<tr><td colspan="4" class="text-center">No reports found.</td></tr>';
+                        ? reports.map(r => `<tr>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.reporting_year}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.reporting_month}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.fuel_consumed_liters}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.distance_traveled_km || 'N/A'}</td>
+                        </tr>`).join('')
+                        : '<tr><td colspan="4" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">No reports found.</td></tr>';
                 }
 
                 mfcrVehicleSelect.addEventListener('change', async () => {
                     const selectedVehicleId = mfcrVehicleSelect.value;
                     if (selectedVehicleId) {
-                        mfcrContentArea.classList.remove('d-none');
+                        mfcrContentArea.classList.remove('hidden');
                         await renderMfcrReports(selectedVehicleId);
                     } else {
-                        mfcrContentArea.classList.add('d-none');
+                        mfcrContentArea.classList.add('hidden');
                     }
                 });
 
@@ -806,11 +815,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     mfcrReports = mfcrReports.filter(r => allowedVehicleIds.has(r.vehicleId));
                 }
 
+                // Calculate additional KPIs
+                const totalElectricity = mecrReports.reduce((sum, r) => sum + (Number(r.electricity_consumption_kwh) || 0), 0);
+                const totalFuel = mfcrReports.reduce((sum, r) => sum + (Number(r.fuel_consumed_liters) || 0), 0);
+                const totalSavings = rios.reduce((sum, r) => sum + (Number(r.estimated_savings_php) || 0), 0);
+                const totalInvestment = ppas.reduce((sum, p) => sum + (Number(p.actual_cost_php) || Number(p.estimated_cost_php) || 0), 0);
+
                 // Render Stats
                 document.getElementById('stats-total-buildings').textContent = buildings.length;
                 document.getElementById('stats-total-vehicles').textContent = vehicles.length;
                 document.getElementById('stats-high-rios').textContent = rios.filter(r => r.priority === 'High').length;
                 document.getElementById('stats-ongoing-ppas').textContent = ppas.filter(p => p.status === 'Ongoing').length;
+
+                // Render New KPIs
+                if(document.getElementById('stats-total-electricity')) document.getElementById('stats-total-electricity').textContent = totalElectricity.toLocaleString();
+                if(document.getElementById('stats-total-fuel')) document.getElementById('stats-total-fuel').textContent = totalFuel.toLocaleString();
+                if(document.getElementById('stats-total-savings')) document.getElementById('stats-total-savings').textContent = '₱' + totalSavings.toLocaleString();
+                if(document.getElementById('stats-total-investment')) document.getElementById('stats-total-investment').textContent = '₱' + totalInvestment.toLocaleString();
                 
                 // Process and Render Charts
                 renderConsumptionChart('electricityChart', mecrReports, 'electricity_consumption_kwh', 'Electricity (kWh)');
