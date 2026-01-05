@@ -1,6 +1,7 @@
-import { getCurrentLguId, setCurrentLguId, getNextLoadId, getCurrentLoadId } from './views/state.js';
-import { applyHeroHeader } from './views/ui.js';
+import { getCurrentLguId, setCurrentLguId, getNextLoadId, getCurrentLoadId, setCurrentUser } from './views/state.js';
+import { applyHeroHeader, initManualAccordion, populateLguSelector } from './views/ui.js';
 import { handleRouting } from './router.js';
+import { loginWithGoogle, logout } from './auth.js';
 
 // --- FUNCTIONS ---
 
@@ -8,11 +9,9 @@ export async function initLguSelector() {
     if (typeof document !== 'undefined') {
         const selector = document.getElementById('lgu-selector');
         const headerLguName = document.getElementById('header-lgu-name');
-        const lgus = await window.getLguList();
+        const lgus = await populateLguSelector(selector, { includeEmpty: false });
 
         if (lgus.length > 0) {
-            selector.innerHTML = lgus.map(lgu => `<option value="${lgu.id}">${lgu.name}</option>`).join('');
-            
             // Set initial value
             if (getCurrentLguId() && lgus.find(l => l.id === getCurrentLguId())) {
                 selector.value = getCurrentLguId();
@@ -61,6 +60,7 @@ export async function loadContent(path, onContentReady) {
 
                     // Apply gradient style to headers dynamically for views not manually updated
         applyHeroHeader(appContent);
+                    initManualAccordion();
                     
                     if (onContentReady) {
                         await onContentReady(myLoadId); 
@@ -74,10 +74,52 @@ export async function loadContent(path, onContentReady) {
                 }
             }
         
+export function initAuth() {
+    const loginScreen = document.getElementById('login-screen');
+    const googleBtn = document.getElementById('btn-google-login');
+    const logoutBtn = document.getElementById('btn-logout');
+
+    if (googleBtn) {
+        googleBtn.addEventListener('click', loginWithGoogle);
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
+    }
+
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+            // User is signed in
+            setCurrentUser(user);
+            
+            // Check if user profile exists in Firestore, if not create it (Pending role)
+            const userDoc = await window.db.collection('users').doc(user.uid).get();
+            if (!userDoc.exists) {
+                await window.db.collection('users').doc(user.uid).set({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    role: 'Pending',
+                    assignedLguId: null,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+
+            if (loginScreen) loginScreen.classList.add('hidden');
+            
+            // Initialize app components
+            await initLguSelector();
+            handleRouting();
+        } else {
+            // User is signed out
+            setCurrentUser(null);
+            if (loginScreen) loginScreen.classList.remove('hidden');
+        }
+    });
+}
                        
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('hashchange', handleRouting);
-    await initLguSelector(); // Initialize LGU selector before routing
-    handleRouting(); // Initial load
+    initAuth(); // Initialize Auth which will trigger LGU selector and Routing
 });

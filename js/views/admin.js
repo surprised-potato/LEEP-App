@@ -1,12 +1,27 @@
 import { initLguSelector } from '../app.js';
 
+const modules = [
+    { id: 'dashboard', name: 'Dashboard' },
+    { id: 'fsbds', name: 'Buildings (FSBD)' },
+    { id: 'vehicles', name: 'Vehicles' },
+    { id: 'made', name: 'Equipment (MADE)' },
+    { id: 'consumption', name: 'Consumption' },
+    { id: 'seu', name: 'SEU Identification' },
+    { id: 'rios', name: 'Recommendations (RIO)' },
+    { id: 'ppas', name: 'Projects (PPA)' },
+    { id: 'reporting', name: 'Compliance Report' },
+    { id: 'lgus', name: 'LGUs' },
+    { id: 'admin', name: 'Admin Panel' }
+];
+
 export async function renderAdmin() {
                 // Fetch all data
-                const [lgus, fsbds, vehicles, made, mecr, mfcr, rios, ppas] = await Promise.all([
+                const [lgus, fsbds, vehicles, made, mecr, mfcr, rios, ppas, users] = await Promise.all([
             window.getLguList(), window.getFsbdList(), window.getVehicleList(), window.getMadeList(),
             window.db.collection('mecr_reports').get().then(s => s.docs.map(d => ({id:d.id, ...d.data()}))),
             window.db.collection('mfcr_reports').get().then(s => s.docs.map(d => ({id:d.id, ...d.data()}))),
-            window.getRioList(), window.getPpaList()
+            window.getRioList(), window.getPpaList(),
+            window.getUserList()
                 ]);
 
                 // --- SAMPLE DATA BUTTON LOGIC ---
@@ -131,4 +146,46 @@ export async function renderAdmin() {
 
         renderRows('table-rios', rios, i => i.proposed_action, i => fsbdMap[i.fsbdId] || vehicleMap[i.vehicleId] || 'Unknown Asset', '#/rios/edit', window.deleteRio);
         renderRows('table-ppas', ppas, i => i.project_name, () => 'N/A', '#/ppas/edit', window.deletePpa);
+
+        // Render Users
+        renderRows('table-users', users, i => `${i.displayName || 'Unknown'} (${i.email})`, i => lguMap[i.assignedLguId] || 'None / Pending', '#/users', () => false);
+
+        // --- DEFAULT PERMISSIONS LOGIC ---
+        const defaultContainer = document.getElementById('admin-default-modules');
+        const defaultPerms = await window.getDefaultPermissions();
+
+        defaultContainer.innerHTML = modules.map(m => {
+            const read = defaultPerms[m.id]?.read ?? true;
+            const write = defaultPerms[m.id]?.write ?? true;
+            return `
+                <div class="flex items-center py-2 border-b border-gray-100 last:border-0">
+                    <div class="flex-1 text-sm font-medium text-gray-700">${m.name}</div>
+                    <div class="w-24 flex justify-center">
+                        <input type="checkbox" class="default-perm-check w-5 h-5 text-blue-600 rounded" data-module="${m.id}" data-type="read" ${read ? 'checked' : ''}>
+                    </div>
+                    <div class="w-24 flex justify-center">
+                        <input type="checkbox" class="default-perm-check w-5 h-5 text-blue-600 rounded" data-module="${m.id}" data-type="write" ${write ? 'checked' : ''}>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('btn-save-default-perms').onclick = async () => {
+            const btn = document.getElementById('btn-save-default-perms');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            
+            const newDefaults = {};
+            document.querySelectorAll('.default-perm-check').forEach(cb => {
+                const mod = cb.dataset.module;
+                const type = cb.dataset.type;
+                if (!newDefaults[mod]) newDefaults[mod] = {};
+                newDefaults[mod][type] = cb.checked;
+            });
+
+            if (await window.updateDefaultPermissions(newDefaults)) {
+                btn.textContent = 'Saved!';
+                setTimeout(() => { btn.disabled = false; btn.textContent = 'Save Default Permissions'; }, 2000);
+            }
+        };
             }

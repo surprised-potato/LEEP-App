@@ -12,6 +12,7 @@ import { renderRioList, initRioForm } from './views/rios.js';
 import { renderPpaList, initPpaForm } from './views/ppas.js';
 import { renderReporting } from './views/reporting.js';
 import { renderAdmin } from './views/admin.js';
+import { renderUserManagement } from './views/user-management.js';
 
 const routes = {
     '/dashboard': { view: 'views/dashboard.html', controller: renderDashboard },
@@ -37,6 +38,7 @@ const routes = {
     '/ppas/edit/:id': { view: 'views/ppa-form.html', controller: initPpaForm },
     '/reporting': { view: 'views/reporting.html', controller: renderReporting },
     '/admin': { view: 'views/admin.html', controller: renderAdmin },
+    '/users': { view: 'views/user-management.html', controller: renderUserManagement },
     '/manual': { view: 'views/user-manual.html', controller: null },
 };
 

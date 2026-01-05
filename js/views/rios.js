@@ -25,19 +25,26 @@ export async function renderRioList() {
                 vehicles.forEach(v => assetMap[v.id] = `Vehicle: ${v.plate_number}`);
 
                 if (rios.length > 0) {
-                    tableBody.innerHTML = rios.map(rio => `
-                        <tr>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.proposed_action}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${assetMap[rio.fsbdId || rio.vehicleId] || 'N/A'}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.priority}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.status}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <a href="#/rios/edit/${rio.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
-                            </td>
-                        </tr>
-                    `).join('');
+                    tableBody.innerHTML = rios.map(rio => {
+                        const cost = Number(rio.estimated_cost_php) || 0;
+                        const savings = Number(rio.estimated_savings_php) || 0;
+                        const roi = savings > 0 ? (cost / (savings * 12)).toFixed(2) : '-';
+
+                        return `
+                            <tr>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.proposed_action}</td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${assetMap[rio.fsbdId || rio.vehicleId] || 'N/A'}</td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.priority}</td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.status}</td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm font-mono">${roi}</td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                    <a href="#/rios/edit/${rio.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
                 } else {
-                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No recommendations found.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No recommendations found.</td></tr>';
                 }
 }
 
@@ -56,7 +63,20 @@ export async function initRioForm(docId = null) {
                 const statusField = document.getElementById('status');
                 const costField = document.getElementById('estimated_cost_php');
                 const savingsField = document.getElementById('estimated_savings_php');
+                const roiYearsField = document.getElementById('roi_years');
+                const notesField = document.getElementById('notes');
                 const selectedSeusContainer = document.getElementById('selected-seus-container');
+
+                // Helper to calculate ROI years
+                const calculateROI = () => {
+                    const cost = Number(costField.value) || 0;
+                    const savings = Number(savingsField.value) || 0;
+                    if (savings > 0) {
+                        roiYearsField.value = (cost / (savings * 12)).toFixed(2);
+                    } else {
+                        roiYearsField.value = '-';
+                    }
+                };
 
                 // Fetch SEUs for dropdown
         const allSeus = await window.getSeuList();
@@ -96,6 +116,9 @@ export async function initRioForm(docId = null) {
 
                 assetIdField.addEventListener('change', () => updateContext());
 
+                costField.addEventListener('input', calculateROI);
+                savingsField.addEventListener('input', calculateROI);
+
                 assetTypeField.addEventListener('change', async () => {
                     const type = assetTypeField.value;
                     assetIdField.innerHTML = '<option value="">Loading...</option>';
@@ -130,7 +153,8 @@ export async function initRioForm(docId = null) {
                         estimated_savings_php: Number(savingsField.value) || null,
                         fsbdId: assetTypeField.value === 'building' ? assetIdField.value : null,
                         vehicleId: assetTypeField.value === 'vehicle' ? assetIdField.value : null,
-                        seuFindingIds: Array.from(selectedSeuIds)
+                        seuFindingIds: Array.from(selectedSeuIds),
+                        notes: notesField.value
                     };
 
                     const id = idField.value;
@@ -197,6 +221,7 @@ export async function initRioForm(docId = null) {
                             statusField.value = data.status || 'Identified';
                             costField.value = data.estimated_cost_php || '';
                             savingsField.value = data.estimated_savings_php || '';
+                            notesField.value = data.notes || '';
                             
                             const assetType = data.fsbdId ? 'building' : 'vehicle';
                             assetTypeField.value = assetType;
@@ -225,6 +250,8 @@ export async function initRioForm(docId = null) {
                                 data.seuFindingIds.forEach(id => selectedSeuIds.add(id));
                                 renderSelectedSeus();
                             }
+
+                            calculateROI();
                         }
                     }
                     

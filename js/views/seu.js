@@ -1,4 +1,5 @@
 import { getCurrentLguId } from './state.js';
+import { openFormModal } from './ui.js';
 
 export async function renderSeuPage() {
                 const seuTableBody = document.getElementById('seu-table-body');
@@ -140,13 +141,24 @@ export async function renderSeuPage() {
                     document.querySelectorAll('.btn-add-seu-equip').forEach(btn => {
                         btn.addEventListener('click', async (e) => {
                             const m = calculatedMade.find(i => i.id === e.target.dataset.id);
-                            const desc = prompt("Enter SEU Finding Description:", `High consumption equipment: ${m.description_of_equipment}`);
-                            if (desc) {
-                        await window.createSeu({
+                            const result = await openFormModal({
+                                title: 'Identify SEU from Equipment',
+                                fields: [{
+                                    name: 'finding_description',
+                                    label: 'Finding Description',
+                                    type: 'textarea',
+                                    required: true,
+                                    defaultValue: `High consumption equipment: ${m.description_of_equipment}`
+                                }],
+                                submitText: 'Identify'
+                            });
+
+                            if (result) {
+                                await window.createSeu({
                                     fsbdId: m.fsbdId,
                                     energy_use_category: m.energy_use_category,
                                     linkedEquipmentIds: [m.id],
-                                    finding_description: desc,
+                                    finding_description: result.finding_description,
                                     identification_method: 'Calculated (Rating * Hours)',
                                     status: 'Identified'
                                 });
@@ -158,12 +170,22 @@ export async function renderSeuPage() {
                     document.querySelectorAll('.btn-add-seu-vehicle').forEach(btn => {
                         btn.addEventListener('click', async (e) => {
                             const v = vehicleStats.find(i => i.id === e.target.dataset.id);
-                            const desc = prompt("Enter SEU Finding Description:", `High fuel consumption vehicle: ${v.plate_number}`);
-                            if (desc) {
-                        await window.createSeu({
+                            const result = await openFormModal({
+                                title: 'Identify SEU from Vehicle',
+                                fields: [{
+                                    name: 'finding_description',
+                                    label: 'Finding Description',
+                                    type: 'textarea',
+                                    required: true,
+                                    defaultValue: `High fuel consumption vehicle: ${v.plate_number}`
+                                }],
+                                submitText: 'Identify'
+                            });
+                            if (result) {
+                                await window.createSeu({
                                     vehicleId: v.id,
                                     energy_use_category: 'Fuel Consumption',
-                                    finding_description: desc,
+                                    finding_description: result.finding_description,
                                     identification_method: 'Historical Average',
                                     status: 'Identified'
                                 });
@@ -172,6 +194,66 @@ export async function renderSeuPage() {
                         });
                     });
 
+                    // --- Event Listener for "Create Custom SEU" ---
+                    const createBtn = document.getElementById('btn-create-seu');
+                    if (createBtn) {
+                        createBtn.addEventListener('click', async () => {
+                            const assets = [
+                                ...lguBuildings.map(b => ({ id: b.id, name: `Building: ${b.name}`, type: 'building' })),
+                                ...lguVehicles.map(v => ({ id: v.id, name: `Vehicle: ${v.plate_number}`, type: 'vehicle' }))
+                            ];
+
+                            if (assets.length === 0) {
+                                return alert('No buildings or vehicles found for the current LGU. Please add an asset first.');
+                            }
+
+                            const assetOptions = assets.map(a => ({
+                                value: `${a.type}:${a.id}`,
+                                text: a.name
+                            }));
+
+                            const result = await openFormModal({
+                                title: 'Add Manual SEU Finding',
+                                fields: [
+                                    {
+                                        name: 'asset',
+                                        label: 'Select Asset',
+                                        type: 'select',
+                                        options: assetOptions,
+                                        required: true
+                                    },
+                                    {
+                                        name: 'finding_description',
+                                        label: 'Finding Description',
+                                        type: 'textarea',
+                                        required: true,
+                                        placeholder: 'e.g., Lights in hallway are always on'
+                                    },
+                                    {
+                                        name: 'energy_use_category',
+                                        label: 'Energy Use Category',
+                                        type: 'text',
+                                        required: true,
+                                        placeholder: 'e.g., HVAC, Lighting, Fuel'
+                                    }
+                                ],
+                                submitText: 'Add Finding'
+                            });
+
+                            if (result) {
+                                const [type, id] = result.asset.split(':');
+                                await window.createSeu({
+                                    fsbdId: type === 'building' ? id : null,
+                                    vehicleId: type === 'vehicle' ? id : null,
+                                    energy_use_category: result.energy_use_category,
+                                    finding_description: result.finding_description,
+                                    identification_method: 'Manual Entry',
+                                    status: 'Identified'
+                                });
+                                renderSeuPage();
+                            }
+                        });
+                    }
                 } catch (error) {
                     console.error("Error rendering SEU page:", error);
                 }

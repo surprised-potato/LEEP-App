@@ -185,3 +185,208 @@ export function openAssetDetailsModal(title, reports, valueKey, unit, madeItems 
         if (e.target === modal) modal.remove();
     });
 }
+
+export function openFormModal({ title, fields, submitText = 'Submit' }) {
+    return new Promise((resolve) => {
+        // Prevent multiple modals
+        if (document.getElementById('form-modal')) {
+            document.getElementById('form-modal').remove();
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'form-modal';
+        modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center';
+
+        const formFieldsHTML = fields.map(field => {
+            const { name, label, type, options, defaultValue = '', required = false, placeholder = '' } = field;
+            let inputHTML = '';
+            const commonClasses = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50";
+
+            switch (type) {
+                case 'select':
+                    inputHTML = `<select id="modal-field-${name}" name="${name}" class="${commonClasses}" ${required ? 'required' : ''}>
+                        ${options.map(opt => `<option value="${opt.value}">${opt.text}</option>`).join('')}
+                    </select>`;
+                    break;
+                case 'textarea':
+                     inputHTML = `<textarea id="modal-field-${name}" name="${name}" rows="3" class="${commonClasses}" placeholder="${placeholder}" ${required ? 'required' : ''}>${defaultValue}</textarea>`;
+                    break;
+                case 'text':
+                default:
+                    inputHTML = `<input type="text" id="modal-field-${name}" name="${name}" value="${defaultValue}" placeholder="${placeholder}" class="${commonClasses}" ${required ? 'required' : ''}>`;
+                    break;
+            }
+            return `<div class="mb-4">
+                <label for="modal-field-${name}" class="block text-sm font-medium text-gray-700">${label}</label>
+                ${inputHTML}
+            </div>`;
+        }).join('');
+
+        modal.innerHTML = `
+            <div class="relative border w-full max-w-lg shadow-lg rounded-lg bg-white m-4">
+                <form id="modal-actual-form">
+                    <div class="flex justify-between items-center px-6 py-4 border-b hero-header">
+                        <h3 class="text-xl font-bold">${title}</h3>
+                        <button type="button" class="text-white hover:text-gray-200 text-2xl font-bold leading-none" id="modal-btn-close">&times;</button>
+                    </div>
+                    <div class="p-6">
+                        ${formFieldsHTML}
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3">
+                        <button type="button" id="modal-btn-cancel" class="bg-white hover:bg-gray-100 text-gray-700 font-bold py-2 px-4 rounded-lg border border-gray-300 transition-colors">Cancel</button>
+                        <button type="submit" id="modal-btn-submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors">${submitText}</button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const form = document.getElementById('modal-actual-form');
+        const closeModal = () => modal.remove();
+
+        const handleCancel = () => {
+            closeModal();
+            resolve(null);
+        };
+
+        document.getElementById('modal-btn-close').addEventListener('click', handleCancel);
+        document.getElementById('modal-btn-cancel').addEventListener('click', handleCancel);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) handleCancel();
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const result = Object.fromEntries(formData.entries());
+            closeModal();
+            resolve(result);
+        });
+    });
+}
+
+export function openInfoModal({ title, contentHTML }) {
+    // Prevent multiple modals
+    if (document.getElementById('info-modal')) {
+        document.getElementById('info-modal').remove();
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'info-modal';
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center';
+
+    modal.innerHTML = `
+        <div class="relative border w-full max-w-3xl shadow-lg rounded-lg bg-white m-4">
+            <div class="flex justify-between items-center px-6 py-4 border-b hero-header">
+                <h3 class="text-xl font-bold">${title}</h3>
+                <button type="button" class="text-white hover:text-gray-200 text-2xl font-bold leading-none" id="info-modal-btn-close">&times;</button>
+            </div>
+            <div class="p-6 prose max-w-none">
+                ${contentHTML}
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                <button type="button" id="info-modal-btn-ok" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors">OK</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+
+    document.getElementById('info-modal-btn-close').addEventListener('click', closeModal);
+    document.getElementById('info-modal-btn-ok').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+export function initManualAccordion() {
+    const manualCards = document.querySelectorAll('.manual-card');
+
+    manualCards.forEach(card => {
+        // The listener is attached to the card itself, so any click within it will trigger the expansion.
+        if (card.dataset.listenerAttached) return;
+        card.dataset.listenerAttached = 'true';
+
+        // Accessibility
+        card.setAttribute('role', 'button');
+        if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
+
+        const toggle = () => {
+            const targetId = card.dataset.toggleTarget;
+            const targetContent = document.getElementById(targetId);
+            const chevron = card.querySelector('.manual-card-chevron');
+
+            if (targetContent) {
+                const isOpen = targetContent.classList.contains('max-h-[2000px]');
+
+                if (!isOpen) {
+                    // Close other open cards to create an accordion effect
+                    document.querySelectorAll('.manual-content').forEach(openContent => {
+                        openContent.classList.remove('max-h-[2000px]', 'opacity-100', 'translate-y-0');
+                        openContent.classList.add('max-h-0', 'opacity-0', '-translate-y-2');
+                        
+                        const openCard = document.querySelector(`[data-toggle-target="${openContent.id}"]`);
+                        if (openCard) {
+                            openCard.classList.add('rounded-lg');
+                            openCard.classList.remove('rounded-t-lg', 'shadow-xl');
+                            openCard.querySelector('.manual-card-chevron')?.classList.remove('rotate-180');
+                        }
+                    });
+
+                    // Open the clicked card
+                    targetContent.classList.remove('max-h-0', 'opacity-0', '-translate-y-2');
+                    targetContent.classList.add('max-h-[2000px]', 'opacity-100', 'translate-y-0');
+                    card.classList.remove('rounded-lg');
+                    card.classList.add('rounded-t-lg', 'shadow-xl');
+                    chevron?.classList.add('rotate-180');
+                } else {
+                    // Close the clicked card
+                    targetContent.classList.add('max-h-0', 'opacity-0', '-translate-y-2');
+                    targetContent.classList.remove('max-h-[2000px]', 'opacity-100', 'translate-y-0');
+                    card.classList.add('rounded-lg');
+                    card.classList.remove('rounded-t-lg', 'shadow-xl');
+                    chevron?.classList.remove('rotate-180');
+                }
+            }
+        };
+
+        card.addEventListener('click', toggle);
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggle();
+            }
+        });
+    });
+}
+
+/**
+ * Populates a select element with LGUs from the database.
+ * @param {HTMLSelectElement} selector 
+ * @param {Object} options 
+ * @returns {Promise<Array>} The list of LGUs
+ */
+export async function populateLguSelector(selector, options = {}) {
+    const lgus = await window.getLguList();
+    if (!selector) return lgus;
+    
+    const { 
+        includeEmpty = true, 
+        emptyText = 'Select LGU', 
+        emptyValue = '',
+        additionalOptions = [] 
+    } = options;
+    
+    let html = includeEmpty ? `<option value="${emptyValue}">${emptyText}</option>` : '';
+    
+    if (additionalOptions.length > 0) {
+        html += additionalOptions.map(opt => `<option value="${opt.value}">${opt.text}</option>`).join('');
+    }
+    
+    html += lgus.map(lgu => `<option value="${lgu.id}">${lgu.name}</option>`).join('');
+    selector.innerHTML = html;
+    return lgus;
+}

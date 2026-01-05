@@ -13,6 +13,20 @@
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
 
+    <!-- Login Screen Overlay -->
+    <div id="login-screen" class="fixed inset-0 bg-indigo-900 flex items-center justify-center z-[100] hidden">
+        <div class="bg-white p-10 rounded-xl shadow-2xl max-w-md w-full text-center">
+            <div class="mb-8">
+                <h1 class="text-4xl font-extrabold text-indigo-600 mb-2">LGU EEC</h1>
+                <p class="text-gray-500">Energy Efficiency and Conservation Platform</p>
+            </div>
+            <button id="btn-google-login" class="flex items-center justify-center w-full bg-white border border-gray-300 rounded-lg px-6 py-4 text-lg font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-md hover:shadow-lg">
+                <img class="w-6 h-6 mr-4" src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+                <span>Sign in with Google</span>
+            </button>
+        </div>
+    </div>
+
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         <aside id="sidebar" class="w-64 bg-gray-800 text-gray-100 flex flex-col shadow-lg transition-all duration-300 overflow-hidden whitespace-nowrap">
@@ -42,8 +56,10 @@
                     <li><a href="#/reporting" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">Compliance Report</a></li>
                     <li class="border-t border-gray-700 my-2"></li>
                     <li><a href="#/lgus" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">LGUs</a></li>
+                    <li><a href="#/users" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">User Management</a></li>
                     <li><a href="#/admin" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white text-yellow-400">Admin Panel</a></li>
                     <li><a href="#/manual" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">User Manual</a></li>
+                    <li><button id="btn-logout" class="w-full text-left py-2.5 px-4 rounded transition duration-200 hover:bg-red-700 hover:text-white text-red-400">Logout</button></li>
                 </ul>
             </nav>
         </aside>
@@ -72,6 +88,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 
     <!-- App Scripts -->
     <script src="js/firebase-config.js"></script>

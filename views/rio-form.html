@@ -54,15 +54,24 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                     <label for="estimated_cost_php" class="block text-gray-700 text-sm font-bold mb-2">Est. Cost (PHP)</label>
                     <input type="number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="estimated_cost_php">
                 </div>
                 <div>
-                    <label for="estimated_savings_php" class="block text-gray-700 text-sm font-bold mb-2">Est. Savings (PHP)</label>
+                    <label for="estimated_savings_php" class="block text-gray-700 text-sm font-bold mb-2">Est. Savings (PHP/month)</label>
                     <input type="number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="estimated_savings_php">
                 </div>
+                <div>
+                    <label for="roi_years" class="block text-gray-700 text-sm font-bold mb-2">Years to ROI</label>
+                    <input type="text" class="bg-gray-100 border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none" id="roi_years" readonly placeholder="-">
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label for="notes" class="block text-gray-700 text-sm font-bold mb-2">Notes and Remarks</label>
+                <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="notes" rows="3" placeholder="Additional details, assumptions, or implementation notes..."></textarea>
             </div>
 
             <div class="flex items-center justify-start gap-4">

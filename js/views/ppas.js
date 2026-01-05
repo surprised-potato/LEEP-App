@@ -23,8 +23,8 @@ export async function renderPpaList() {
                         <tr>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.project_name}</td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.status}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.estimated_cost_php || 'N/A'}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.actual_cost_php || 'N/A'}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right font-mono">${ppa.estimated_cost_php != null ? Number(ppa.estimated_cost_php).toLocaleString() : 'N/A'}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right font-mono">${ppa.actual_cost_php != null ? Number(ppa.actual_cost_php).toLocaleString() : 'N/A'}</td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                 <a href="#/ppas/edit/${ppa.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
                             </td>

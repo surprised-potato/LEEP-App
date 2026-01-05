@@ -404,6 +404,74 @@ async function deleteMade(docId) {
     }
 }
 
+// --- User Management Functions ---
+
+/**
+ * Fetches the list of all users from Firestore.
+ * @returns {Promise<Array>} A promise that resolves to an array of user objects.
+ */
+async function getUserList() {
+    if (!window.db) {
+        console.error("Firestore is not initialized.");
+        return [];
+    }
+    try {
+        const snapshot = await db.collection('users').get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Error fetching user list:", error);
+        return [];
+    }
+}
+
+/**
+ * Updates a user's permissions in Firestore.
+ * @param {string} uid The user's ID.
+ * @param {object} permissions The permissions object.
+ * @returns {Promise<boolean>}
+ */
+async function updateUserPermissions(uid, permissions) {
+    if (!window.db) return false;
+    try {
+        await db.collection('users').doc(uid).update({ permissions });
+        return true;
+    } catch (error) {
+        console.error("Error updating user permissions:", error);
+        return false;
+    }
+}
+
+/**
+ * Fetches the global default permissions for new users.
+ * @returns {Promise<object>}
+ */
+async function getDefaultPermissions() {
+    if (!window.db) return {};
+    try {
+        const doc = await db.collection('settings').doc('default_permissions').get();
+        return doc.exists ? doc.data().permissions : {};
+    } catch (error) {
+        console.error("Error fetching default permissions:", error);
+        return {};
+    }
+}
+
+/**
+ * Updates the global default permissions.
+ * @param {object} permissions 
+ * @returns {Promise<boolean>}
+ */
+async function updateDefaultPermissions(permissions) {
+    if (!window.db) return false;
+    try {
+        await db.collection('settings').doc('default_permissions').set({ permissions });
+        return true;
+    } catch (error) {
+        console.error("Error updating default permissions:", error);
+        return false;
+    }
+}
+
 // --- Sample Data Management ---
 
 const SAMPLE_DATA = {
@@ -701,6 +769,7 @@ if (typeof module !== 'undefined' && module.exports) {
         getMfcrReports, createMfcrReport, deleteMfcrReport,
         getRioList, createRio, updateRio, getRioById, deleteRio,
         getPpaList, createPpa, updatePpa, getPpaById, deletePpa,
+        getUserList, updateUserPermissions, getDefaultPermissions, updateDefaultPermissions,
         checkSampleDataExists, createSampleData, deleteSampleData,
         getSeuList, createSeu, deleteSeu
     };

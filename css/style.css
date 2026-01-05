@@ -6,8 +6,8 @@
     overflow: hidden;
 }
 
-.hero-header h1, .hero-header h2, .hero-header h3, .hero-header button {
-    color: white !important;
+.hero-header h1, .hero-header h2, .hero-header h3 {
+    color: white;
 }
 
 .hero-header::after {
