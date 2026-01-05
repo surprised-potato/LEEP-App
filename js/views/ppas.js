@@ -1,4 +1,4 @@
-import { getCurrentLguId } from './state.js';
+import { getCurrentLguId, checkPermission } from './state.js';
 
 export async function renderPpaList() {
                 const tableBody = document.getElementById('ppa-table-body');
@@ -17,6 +17,8 @@ export async function renderPpaList() {
                     
                     ppas = ppas.filter(ppa => ppa.relatedRioIds && ppa.relatedRioIds.some(id => allowedRioIds.has(id)));
                 }
+
+                const canWrite = checkPermission('ppas', 'write');
 
                 if (ppas.length > 0) {
                     tableBody.innerHTML = ppas.map(ppa => `

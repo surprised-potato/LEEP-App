@@ -39,6 +39,13 @@ export async function initConsumptionPage() {
                 const mecrForm = document.getElementById('mecr-form');
                 let currentMecrReports = [];
 
+                // --- MFCR (Fuel) Logic ---
+                const mfcrVehicleSelect = document.getElementById('mfcrVehicleSelect');
+                const mfcrContentArea = document.getElementById('mfcr-content-area');
+                const mfcrTableBody = document.getElementById('mfcr-table-body');
+                const mfcrForm = document.getElementById('mfcr-form');
+                let currentMfcrReports = [];
+
                 const canWrite = checkPermission('consumption', 'write');
                 [mecrForm, mfcrForm].forEach(form => {
                     if (form) {
@@ -103,13 +110,6 @@ export async function initConsumptionPage() {
                         alert('Error saving electricity report.');
                     }
                 });
-
-                // --- MFCR (Fuel) Logic ---
-                const mfcrVehicleSelect = document.getElementById('mfcrVehicleSelect');
-                const mfcrContentArea = document.getElementById('mfcr-content-area');
-                const mfcrTableBody = document.getElementById('mfcr-table-body');
-                const mfcrForm = document.getElementById('mfcr-form');
-                let currentMfcrReports = [];
 
         const vehicles = await window.getVehicleList();
         // const currentLguId = getCurrentLguId(); // already defined
