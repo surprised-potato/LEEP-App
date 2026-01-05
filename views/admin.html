@@ -1,8 +1,8 @@
 <!-- Hero Section -->
-<div class="bg-white shadow rounded-lg p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="hero-header shadow rounded-lg p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
     <div>
-        <h1 class="text-2xl font-bold text-gray-800">Admin Panel</h1>
-        <p class="text-gray-600 text-sm">Centralized management for all system entities.</p>
+        <h1 class="text-2xl font-bold">Admin Panel</h1>
+        <p class="text-indigo-200 text-sm">Centralized management for all system entities.</p>
     </div>
     <button id="btn-sample-data" class="hidden font-bold py-2 px-4 rounded shadow focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
         Checking Data...
@@ -118,6 +118,13 @@
         <div class="p-4 max-w-2xl">
             <h3 class="text-lg font-bold mb-4">Global Default Permissions</h3>
             <p class="text-sm text-gray-600 mb-6">Set the initial access levels for newly registered users.</p>
+            
+            <div class="mb-8 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <label for="default-lgu-selector" class="block text-sm font-bold text-blue-800 mb-2">Default LGU for New Users</label>
+                <p class="text-xs text-blue-600 mb-3">New users will be automatically assigned to this LGU upon registration.</p>
+                <select id="default-lgu-selector" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm"></select>
+            </div>
+
             <div class="bg-gray-50 rounded-lg p-4 mb-6">
                 <div class="grid grid-cols-1 gap-4">
                     <div class="flex items-center font-bold text-xs text-gray-500 uppercase tracking-wider border-b pb-2">

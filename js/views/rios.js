@@ -1,4 +1,4 @@
-import { getCurrentLguId } from './state.js';
+import { getCurrentLguId, checkPermission } from './state.js';
 import { openAssetDetailsModal } from './ui.js';
 
 export async function renderRioList() {
@@ -6,6 +6,12 @@ export async function renderRioList() {
                 if (!tableBody) return;
 
         let [rios, buildings, vehicles] = await Promise.all([window.getRioList(), window.getFsbdList(), window.getVehicleList()]);
+
+        const canWrite = checkPermission('rios', 'write');
+        const addBtn = document.getElementById('btn-add-rio');
+        if (addBtn) {
+            addBtn.classList.toggle('hidden', !canWrite);
+        }
                 
                 // Filter Assets by LGU
         const currentLguId = getCurrentLguId();
@@ -38,7 +44,9 @@ export async function renderRioList() {
                                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.status}</td>
                                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm font-mono">${roi}</td>
                                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                    <a href="#/rios/edit/${rio.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                                    ${canWrite ? `
+                                        <a href="#/rios/edit/${rio.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                                    ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
                                 </td>
                             </tr>
                         `;

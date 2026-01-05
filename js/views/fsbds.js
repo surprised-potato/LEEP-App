@@ -1,4 +1,4 @@
-import { getCurrentLguId } from './state.js';
+import { getCurrentLguId, checkPermission } from './state.js';
 
 // --- Module-level state for search, sort, and data ---
 let fullFsbdList = [];
@@ -62,8 +62,9 @@ function renderFsbdTable() {
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${fsbd.fsbd_type}</td>
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${fsbd.address}</td>
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <a href="#/fsbds/edit/${fsbd.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
-                    <!-- Delete button can be added here -->
+                    ${checkPermission('fsbds', 'write') ? `
+                        <a href="#/fsbds/edit/${fsbd.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                    ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
                 </td>
             </tr>
         `).join('');
@@ -94,6 +95,12 @@ export async function renderFsbdList() {
 
     // Initial loading state
     tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4">Loading...</td></tr>';
+    
+    // Handle Add Button visibility
+    const addBtn = document.getElementById('btn-add-fsbd');
+    if (addBtn) {
+        addBtn.classList.toggle('hidden', !checkPermission('fsbds', 'write'));
+    }
     
     let fsbds = await window.getFsbdList();
             

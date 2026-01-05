@@ -14,6 +14,7 @@ const modules = [
     { id: 'rios', name: 'Recommendations (RIO)' },
     { id: 'ppas', name: 'Projects (PPA)' },
     { id: 'reporting', name: 'Compliance Report' },
+    { id: 'users', name: 'Users' },
     { id: 'lgus', name: 'LGUs' },
     { id: 'admin', name: 'Admin Panel' }
 ];
@@ -27,7 +28,10 @@ export async function renderUserManagement() {
     // Fetch data and populate selectors
     const [users, lgus] = await Promise.all([
         window.getUserList(),
-        populateLguSelector(lguAssignSelect, { emptyText: 'No LGU Assigned (System Wide)' })
+        populateLguSelector(lguAssignSelect, { 
+            emptyText: 'No LGU Assigned (System Wide)',
+            filterByUser: false 
+        })
     ]);
     
     allUsers = users;
@@ -103,8 +107,8 @@ function selectUser(userId) {
     const permissions = selectedUser.permissions || {};
 
     modulesList.innerHTML = modules.map(m => {
-        const read = permissions[m.id]?.read ?? true;
-        const write = permissions[m.id]?.write ?? true;
+        const read = permissions[m.id]?.read ?? false;
+        const write = permissions[m.id]?.write ?? false;
         
         return `
             <div class="flex items-center py-2 border-b border-gray-100 last:border-0">
@@ -137,18 +141,19 @@ async function savePermissions() {
     const assignedLguId = document.getElementById('user-lgu-assign').value || null;
 
     // Update both permissions and LGU assignment
-    const success = await window.db.collection('users').doc(selectedUser.id).update({ 
-        permissions, 
-        assignedLguId 
-    });
+    try {
+        await window.db.collection('users').doc(selectedUser.id).update({ 
+            permissions, 
+            assignedLguId 
+        });
 
-    if (success) {
         selectedUser.permissions = permissions;
         selectedUser.assignedLguId = assignedLguId;
         btn.textContent = 'Saved!';
         setTimeout(() => { btn.disabled = false; btn.textContent = 'Save Permissions'; }, 2000);
-    } else {
-        alert('Failed to save permissions.');
+    } catch (error) {
+        console.error('Error saving permissions:', error);
+        alert('Failed to save permissions: ' + error.message);
         btn.disabled = false; btn.textContent = 'Save Permissions';
     }
 }

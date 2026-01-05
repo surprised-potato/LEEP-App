@@ -1,4 +1,4 @@
-import { getCurrentLguId } from './state.js';
+import { getCurrentLguId, checkPermission } from './state.js';
 import { openFormModal } from './ui.js';
 
 export async function renderSeuPage() {
@@ -9,6 +9,12 @@ export async function renderSeuPage() {
                 if (!currentLguId) {
                     seuTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">Please select an LGU first.</td></tr>';
                     return;
+                }
+
+                const canWrite = checkPermission('seu', 'write');
+                const createBtn = document.getElementById('btn-create-seu');
+                if (createBtn) {
+                    createBtn.classList.toggle('hidden', !canWrite);
                 }
 
                 try {
@@ -41,7 +47,9 @@ export async function renderSeuPage() {
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${s.finding_description}</td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${s.identification_method}</td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                        <button class="text-red-600 hover:text-red-900 btn-delete-seu" data-id="${s.id}">Delete</button>
+                                        ${canWrite ? `
+                                            <button class="text-red-600 hover:text-red-900 btn-delete-seu" data-id="${s.id}">Delete</button>
+                                        ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
                                     </td>
                                 </tr>
                             `;
@@ -109,9 +117,11 @@ export async function renderSeuPage() {
                                     <div class="text-xs text-gray-500">${bldg ? bldg.name : 'Unknown'} - ${m.location}</div>
                                 </td>
                                 <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-right font-mono">${m.est_monthly_kwh.toLocaleString()} kWh</td>
-                                <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-center">
-                                    <button class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded text-xs font-bold btn-add-seu-equip" data-id="${m.id}">Identify</button>
-                                </td>
+                                ${canWrite ? `
+                                    <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-center">
+                                        <button class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded text-xs font-bold btn-add-seu-equip" data-id="${m.id}">Identify</button>
+                                    </td>
+                                ` : '<td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-center text-gray-400 italic text-xs">Read Only</td>'}
                             </tr>
                         `;
                     }).join('') || '<tr><td colspan="3" class="text-center py-2 text-gray-500">No equipment data found.</td></tr>';
@@ -131,9 +141,11 @@ export async function renderSeuPage() {
                                 <div class="text-xs text-gray-500">${v.make} ${v.model}</div>
                             </td>
                             <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-right font-mono">${v.avgFuel.toLocaleString(undefined, {maximumFractionDigits: 1})} L</td>
-                            <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-center">
-                                <button class="bg-teal-100 text-teal-700 hover:bg-teal-200 px-2 py-1 rounded text-xs font-bold btn-add-seu-vehicle" data-id="${v.id}">Identify</button>
-                            </td>
+                            ${canWrite ? `
+                                <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-center">
+                                    <button class="bg-teal-100 text-teal-700 hover:bg-teal-200 px-2 py-1 rounded text-xs font-bold btn-add-seu-vehicle" data-id="${v.id}">Identify</button>
+                                </td>
+                            ` : '<td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-center text-gray-400 italic text-xs">Read Only</td>'}
                         </tr>
                     `).join('') || '<tr><td colspan="3" class="text-center py-2 text-gray-500">No fuel reports found.</td></tr>';
 

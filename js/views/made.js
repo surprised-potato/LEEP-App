@@ -1,4 +1,4 @@
-import { getCurrentLguId } from './state.js';
+import { getCurrentLguId, checkPermission } from './state.js';
 
 // --- Module-level state for search, sort, and data ---
 let fullMadeList = [];
@@ -77,7 +77,9 @@ function renderMadeTable() {
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right font-mono">${monthlyConsumption}</td>
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${buildingMap[made.fsbdId] || 'N/A'}</td>
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <a href="#/made/edit/${made.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                    ${checkPermission('made', 'write') ? `
+                        <a href="#/made/edit/${made.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                    ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
                 </td>
             </tr>
         `}).join('');
@@ -108,6 +110,12 @@ export async function renderMadeList() {
 
         // Initial loading state
         tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Loading...</td></tr>';
+
+        // Handle Add Button visibility
+        const addBtn = document.getElementById('btn-add-made');
+        if (addBtn) {
+            addBtn.classList.toggle('hidden', !checkPermission('made', 'write'));
+        }
 
         let madeData = await window.getMadeList();
         let buildings = await window.getFsbdList();

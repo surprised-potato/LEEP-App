@@ -33,3 +33,10 @@ export function setCurrentUser(user) {
 export function getCurrentUser() {
     return currentUser;
 }
+
+export function checkPermission(moduleId, type = 'read') {
+    if (!currentUser) return false;
+    // Admins have full access to everything
+    if (currentUser.role === 'Admin') return true;
+    return currentUser.permissions?.[moduleId]?.[type] ?? false;
+}

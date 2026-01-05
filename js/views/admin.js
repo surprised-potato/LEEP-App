@@ -1,4 +1,5 @@
 import { initLguSelector } from '../app.js';
+import { populateLguSelector } from './ui.js';
 
 const modules = [
     { id: 'dashboard', name: 'Dashboard' },
@@ -10,6 +11,7 @@ const modules = [
     { id: 'rios', name: 'Recommendations (RIO)' },
     { id: 'ppas', name: 'Projects (PPA)' },
     { id: 'reporting', name: 'Compliance Report' },
+    { id: 'users', name: 'Users' },
     { id: 'lgus', name: 'LGUs' },
     { id: 'admin', name: 'Admin Panel' }
 ];
@@ -153,10 +155,20 @@ export async function renderAdmin() {
         // --- DEFAULT PERMISSIONS LOGIC ---
         const defaultContainer = document.getElementById('admin-default-modules');
         const defaultPerms = await window.getDefaultPermissions();
+        const defaultLguSelector = document.getElementById('default-lgu-selector');
+
+        if (defaultLguSelector) {
+            await populateLguSelector(defaultLguSelector, { 
+                includeEmpty: true, 
+                emptyText: 'None (System Wide)',
+                filterByUser: false 
+            });
+            defaultLguSelector.value = defaultPerms.defaultLguId || '';
+        }
 
         defaultContainer.innerHTML = modules.map(m => {
-            const read = defaultPerms[m.id]?.read ?? true;
-            const write = defaultPerms[m.id]?.write ?? true;
+            const read = defaultPerms[m.id]?.read ?? false;
+            const write = defaultPerms[m.id]?.write ?? false;
             return `
                 <div class="flex items-center py-2 border-b border-gray-100 last:border-0">
                     <div class="flex-1 text-sm font-medium text-gray-700">${m.name}</div>
@@ -175,7 +187,9 @@ export async function renderAdmin() {
             btn.disabled = true;
             btn.textContent = 'Saving...';
             
-            const newDefaults = {};
+            const newDefaults = {
+                defaultLguId: document.getElementById('default-lgu-selector')?.value || null
+            };
             document.querySelectorAll('.default-perm-check').forEach(cb => {
                 const mod = cb.dataset.module;
                 const type = cb.dataset.type;

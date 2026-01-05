@@ -1,4 +1,4 @@
-import { getCurrentLguId } from './state.js';
+import { getCurrentLguId, checkPermission } from './state.js';
 
 // --- Module-level state for search, sort, and data ---
 let fullVehicleList = [];
@@ -64,7 +64,9 @@ function renderVehicleTable() {
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${vehicle.model}</td>
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${vehicle.fuel_type}</td>
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <a href="#/vehicles/edit/${vehicle.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                    ${checkPermission('vehicles', 'write') ? `
+                        <a href="#/vehicles/edit/${vehicle.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                    ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
                 </td>
             </tr>
         `).join('');
@@ -95,6 +97,12 @@ export async function renderVehicleList() {
 
     // Initial loading state
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">Loading...</td></tr>';
+    
+    // Handle Add Button visibility
+    const addBtn = document.getElementById('btn-add-vehicle');
+    if (addBtn) {
+        addBtn.classList.toggle('hidden', !checkPermission('vehicles', 'write'));
+    }
     
     let vehicles = await window.getVehicleList();
 

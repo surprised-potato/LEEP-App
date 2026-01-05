@@ -1,4 +1,4 @@
-import { getCurrentLguId } from './state.js';
+import { getCurrentLguId, checkPermission } from './state.js';
 
 export async function initConsumptionPage() {
                 // Helper to populate Year and Month dropdowns
@@ -38,6 +38,15 @@ export async function initConsumptionPage() {
                 const mecrTableBody = document.getElementById('mecr-table-body');
                 const mecrForm = document.getElementById('mecr-form');
                 let currentMecrReports = [];
+
+                const canWrite = checkPermission('consumption', 'write');
+                [mecrForm, mfcrForm].forEach(form => {
+                    if (form) {
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        if (submitBtn) submitBtn.disabled = !canWrite;
+                        if (submitBtn && !canWrite) submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                });
 
         const buildings = await window.getFsbdList();
         const currentLguId = getCurrentLguId();

@@ -1,4 +1,5 @@
 // js/ui.js
+import { getCurrentUser, checkPermission } from './state.js';
 
 export function applyHeroHeader(container) {
     if (!container) return;
@@ -11,6 +12,25 @@ export function applyHeroHeader(container) {
             if (title) {
                 title.classList.remove('text-gray-800');
             }
+        }
+    });
+}
+
+export function updateSidebarVisibility() {
+    const navLinks = document.querySelectorAll('aside nav a');
+
+    navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href || href === '#/logout') return;
+
+        // Extract module ID from href (e.g., "#/fsbds" -> "fsbds")
+        const moduleId = href.split('/')[1];
+        if (!moduleId) return;
+
+        if (checkPermission(moduleId, 'read')) {
+            link.classList.remove('hidden');
+        } else {
+            link.classList.add('hidden');
         }
     });
 }
@@ -370,15 +390,24 @@ export function initManualAccordion() {
  * @returns {Promise<Array>} The list of LGUs
  */
 export async function populateLguSelector(selector, options = {}) {
-    const lgus = await window.getLguList();
-    if (!selector) return lgus;
-    
     const { 
         includeEmpty = true, 
         emptyText = 'Select LGU', 
         emptyValue = '',
-        additionalOptions = [] 
+        additionalOptions = [],
+        filterByUser = true
     } = options;
+
+    let lgus = await window.getLguList();
+    
+    if (filterByUser) {
+        const user = getCurrentUser();
+        if (user && user.assignedLguId) {
+            lgus = lgus.filter(l => l.id === user.assignedLguId);
+        }
+    }
+
+    if (!selector) return lgus;
     
     let html = includeEmpty ? `<option value="${emptyValue}">${emptyText}</option>` : '';
     
