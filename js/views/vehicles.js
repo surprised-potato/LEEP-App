@@ -153,18 +153,32 @@ export async function initVehicleForm(docId = null) {
                 const yearField = document.getElementById('year_model');
                 const fuelField = document.getElementById('fuel_type');
         
-                if (docId) {
-                    // EDIT MODE
+        if (docId) {
+            // EDIT MODE
             const data = await window.getVehicleById(docId);
-                    if (data) {
-                        idField.value = data.id;
-                        plateField.value = data.plate_number || '';
-                        makeField.value = data.make || '';
-                        modelField.value = data.model || '';
-                        yearField.value = data.year_model || '';
-                        fuelField.value = data.fuel_type || '';
-                    }
-                }
+            if (data) {
+                idField.value = data.id;
+                plateField.value = data.plate_number || '';
+                makeField.value = data.make || '';
+                modelField.value = data.model || '';
+                yearField.value = data.year_model || '';
+                fuelField.value = data.fuel_type || '';
+            }
+        }
+
+        // Read-only check
+        if (!checkPermission('vehicles', 'write')) {
+            form.querySelectorAll('input, select, textarea').forEach(el => el.disabled = true);
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.classList.add('hidden');
+            
+            // Add a notice
+            const notice = document.createElement('div');
+            notice.className = 'bg-amber-50 border border-amber-200 text-amber-700 p-4 mb-6 rounded-lg text-sm';
+            notice.innerHTML = '<strong>Read-Only Mode:</strong> You do not have permission to modify this vehicle. All changes are disabled.';
+            form.prepend(notice);
+            return; // Don't attach submit listener
+        }
         
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();

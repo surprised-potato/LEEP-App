@@ -51,7 +51,16 @@ export async function initConsumptionPage() {
                     if (form) {
                         const submitBtn = form.querySelector('button[type="submit"]');
                         if (submitBtn) submitBtn.disabled = !canWrite;
-                        if (submitBtn && !canWrite) submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        if (submitBtn && !canWrite) {
+                            submitBtn.classList.add('opacity-50', 'cursor-not-allowed', 'hidden');
+                            form.querySelectorAll('input, select').forEach(el => el.disabled = true);
+
+                             // Add a notice
+                             const notice = document.createElement('div');
+                             notice.className = 'bg-amber-50 border border-amber-200 text-amber-700 p-3 mb-4 rounded text-xs';
+                             notice.innerHTML = '<strong>Read-Only:</strong> You do not have write access to consumption reports.';
+                             form.prepend(notice);
+                        }
                     }
                 });
 

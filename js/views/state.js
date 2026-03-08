@@ -36,7 +36,12 @@ export function getCurrentUser() {
 
 export function checkPermission(moduleId, type = 'read') {
     if (!currentUser) return false;
-    // Admins have full access to everything
-    if (currentUser.role === 'Admin') return true;
+    
+    // System Admins have full access to everything
+    if (currentUser.role === 'System Admin' || currentUser.role === 'Admin') return true;
+    
+    // Pending users have no access to any module
+    if (currentUser.role === 'Pending') return false;
+    
     return currentUser.permissions?.[moduleId]?.[type] ?? false;
 }

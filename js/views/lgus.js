@@ -1,4 +1,5 @@
 import { initLguSelector } from '../app.js';
+import { checkPermission } from './state.js';
 
 export async function renderLguList() {
                 const tableBody = document.getElementById('lgu-table-body');
@@ -32,16 +33,30 @@ export async function initLguForm(docId = null) {
                 const regionField = document.getElementById('region');
                 const provinceField = document.getElementById('province');
         
-                if (docId) {
-                    title.textContent = 'Edit LGU';
+        if (docId) {
+            title.textContent = 'Edit LGU';
             const data = await window.getLguById(docId);
-                    if (data) {
-                        idField.value = data.id;
-                        nameField.value = data.name || '';
-                        regionField.value = data.region || '';
-                        provinceField.value = data.province || '';
-                    }
-                }
+            if (data) {
+                idField.value = data.id;
+                nameField.value = data.name || '';
+                regionField.value = data.region || '';
+                provinceField.value = data.province || '';
+            }
+        }
+
+        // Read-only check - Only System Admins can manage LGUs
+        if (!checkPermission('lgus', 'write')) {
+            form.querySelectorAll('input, select, textarea').forEach(el => el.disabled = true);
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.classList.add('hidden');
+            
+            // Add a notice
+            const notice = document.createElement('div');
+            notice.className = 'bg-amber-50 border border-amber-200 text-amber-700 p-4 mb-6 rounded-lg text-sm';
+            notice.innerHTML = '<strong>Read-Only Mode:</strong> LGU management is restricted to System Administrators.';
+            form.prepend(notice);
+            return; // Don't attach submit listener
+        }
         
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();

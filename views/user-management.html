@@ -26,6 +26,23 @@
                 <p id="selected-user-email" class="text-sm text-gray-500"></p>
             </div>
 
+            <!-- Role Assignment -->
+            <div class="bg-amber-50 rounded-lg p-4 mb-6 border border-amber-100">
+                <h4 class="font-semibold text-amber-800 mb-2">Role Assignment</h4>
+                <p class="text-xs text-amber-600 mb-3">
+                    Selecting a role will auto-populate the module permissions below.
+                    You can further customize individual permissions if needed.
+                </p>
+                <select id="user-role-assign" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+                    <option value="Pending">Pending (No Access)</option>
+                    <option value="System Admin">System Admin</option>
+                    <option value="LGU Admin">LGU Admin</option>
+                    <option value="LGU EEC Officer">LGU EEC Officer</option>
+                    <option value="Auditor">Auditor</option>
+                    <option value="LGU Planner">LGU Planner</option>
+                </select>
+            </div>
+
             <div class="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-100">
                 <h4 class="font-semibold text-blue-800 mb-2">LGU Assignment</h4>
                 <p class="text-xs text-blue-600 mb-3">Assign this user to a specific LGU to restrict their data scope.</p>

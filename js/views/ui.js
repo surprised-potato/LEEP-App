@@ -17,11 +17,25 @@ export function applyHeroHeader(container) {
 }
 
 export function updateSidebarVisibility() {
+    const user = getCurrentUser();
     const navLinks = document.querySelectorAll('aside nav a');
+    const lguSelector = document.getElementById('lgu-selector');
+
+    // Handle LGU selector restriction
+    if (lguSelector) {
+        const lguRestrictedRoles = ['LGU Admin', 'LGU EEC Officer', 'LGU Planner'];
+        const isRestricted = user && lguRestrictedRoles.includes(user.role) && user.assignedLguId;
+        lguSelector.disabled = isRestricted;
+        if (isRestricted && lguSelector.value !== user.assignedLguId) {
+            lguSelector.value = user.assignedLguId;
+            // Trigger change event if needed
+            lguSelector.dispatchEvent(new Event('change'));
+        }
+    }
 
     navLinks.forEach(link => {
         const href = link.getAttribute('href');
-        if (!href || href === '#/logout') return;
+        if (!href || href === '#/logout' || href === '#/dashboard') return;
 
         // Extract module ID from href (e.g., "#/fsbds" -> "fsbds")
         const moduleId = href.split('/')[1];

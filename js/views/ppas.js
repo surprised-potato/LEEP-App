@@ -120,7 +120,7 @@ export async function initPpaForm(docId = null) {
 
                 if (docId) {
                     // EDIT MODE
-            const data = await window.getPpaById(docId);
+                    const data = await window.getPpaById(docId);
                     if (data) {
                         idField.value = data.id;
                         nameField.value = data.project_name || '';
@@ -136,6 +136,20 @@ export async function initPpaForm(docId = null) {
                         }
                         updateRioDetails();
                     }
+                }
+
+                // Read-only check
+                if (!checkPermission('ppas', 'write')) {
+                    form.querySelectorAll('input, select, textarea').forEach(el => el.disabled = true);
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.classList.add('hidden');
+                    
+                    // Add a notice
+                    const notice = document.createElement('div');
+                    notice.className = 'bg-amber-50 border border-amber-200 text-amber-700 p-4 mb-6 rounded-lg text-sm';
+                    notice.innerHTML = '<strong>Read-Only Mode:</strong> You do not have permission to modify this project. All changes are disabled.';
+                    form.prepend(notice);
+                    return; // Don't attach submit listener
                 }
 
                 form.addEventListener('submit', async (e) => {

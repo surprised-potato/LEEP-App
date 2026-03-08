@@ -1,0 +1,47 @@
+<div class="max-w-2xl mx-auto py-12 px-4">
+    <div class="bg-white shadow-2xl rounded-3xl overflow-hidden border border-gray-100">
+        <div class="hero-header px-8 py-10 text-white">
+            <h2 class="text-3xl font-extrabold mb-2">Complete Your Registration</h2>
+            <p class="text-blue-100 opacity-90">Please provide your details and select your target LGU to request access.</p>
+        </div>
+        
+        <form id="registration-form" class="p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Full Name</label>
+                    <input type="text" id="register-name" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Email Address</label>
+                    <input type="email" id="register-email" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium" readonly>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Target LGU</label>
+                <p class="text-xs text-gray-500 mb-3 italic">Select the LGU you are officially representing. Your access will be scoped to this entity.</p>
+                <select id="register-lgu-select" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm" required>
+                    <option value="">Loading LGUs...</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Position / Designation</label>
+                    <input type="text" id="register-position" placeholder="e.g. EEC Officer, Planning Head" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Contact Number</label>
+                    <input type="text" id="register-contact" placeholder="0917-XXX-XXXX" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm">
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+                <button type="button" id="btn-register-logout" class="text-gray-500 hover:text-red-600 font-bold transition-colors">Cancel & Logout</button>
+                <button type="submit" id="btn-register-submit" class="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold py-4 px-10 rounded-2xl shadow-xl transform transition-all hover:scale-[1.02] active:scale-[0.98]">
+                    Submit Registration Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

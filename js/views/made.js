@@ -250,19 +250,33 @@ export async function initMadeForm(docId = null) {
                 
                 buildingField.innerHTML += filteredBuildings.map(bldg => `<option value="${bldg.id}">${bldg.name}</option>`).join('');
         
-                if (docId) {
-                    // EDIT MODE
+        if (docId) {
+            // EDIT MODE
             const data = await window.getMadeById(docId);
-                    if (data) {
-                        idField.value = data.id;
-                        buildingField.value = data.fsbdId || '';
-                        descriptionField.value = data.description_of_equipment || '';
-                        categoryField.value = data.energy_use_category || '';
-                        locationField.value = data.location || '';
-                        powerField.value = data.power_rating_kw || '';
-                        hoursField.value = data.time_of_use_hours_per_day || '';
-                    }
-                }
+            if (data) {
+                idField.value = data.id;
+                buildingField.value = data.fsbdId || '';
+                descriptionField.value = data.description_of_equipment || '';
+                categoryField.value = data.energy_use_category || '';
+                locationField.value = data.location || '';
+                powerField.value = data.power_rating_kw || '';
+                hoursField.value = data.time_of_use_hours_per_day || '';
+            }
+        }
+
+        // Read-only check
+        if (!checkPermission('made', 'write')) {
+            form.querySelectorAll('input, select, textarea').forEach(el => el.disabled = true);
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.classList.add('hidden');
+            
+            // Add a notice
+            const notice = document.createElement('div');
+            notice.className = 'bg-amber-50 border border-amber-200 text-amber-700 p-4 mb-6 rounded-lg text-sm';
+            notice.innerHTML = '<strong>Read-Only Mode:</strong> You do not have permission to modify this equipment. All changes are disabled.';
+            form.prepend(notice);
+            return; // Don't attach submit listener
+        }
         
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();

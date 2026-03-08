@@ -112,42 +112,28 @@ export function initAuth() {
 
         if (user) {
             // User is signed in
-            if (appContent) {
-                appContent.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-[60vh]">
-                        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
-                        <h2 class="mt-4 text-xl font-semibold text-gray-700">Verifying Permissions...</h2>
-                        <p class="text-gray-500">Please wait while we prepare your dashboard.</p>
-                    </div>
-                `;
-            }
-
             if (userInfo) userInfo.classList.remove('hidden');
             if (userName) userName.textContent = user.displayName || user.email;
-            
-            // Check if user profile exists in Firestore, if not create it with defaults
-            const userDoc = await window.db.collection('users').doc(user.uid).get();
-            let userData;
-            if (!userDoc.exists) {
-                const defaults = await window.getDefaultPermissions();
-                const { defaultLguId, ...modulePerms } = defaults || {};
 
-                userData = {
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: user.displayName,
-                    role: 'Pending',
-                    assignedLguId: defaultLguId || null,
-                    permissions: modulePerms || {},
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                await window.db.collection('users').doc(user.uid).set(userData);
-            } else {
-                userData = { id: userDoc.id, ...userDoc.data() };
-            }
+            // Step 1: Check if user profile exists in Firestore
+            const userDoc = await window.db.collection('users').doc(user.uid).get();
             
+            if (!userDoc.exists) {
+                // Path A: New user - Show registration form
+                if (loginScreen) loginScreen.classList.add('hidden');
+                return showRegistrationScreen(user);
+            }
+
+            const userData = { id: userDoc.id, ...userDoc.data() };
             setCurrentUser(userData);
 
+            if (userData.role === 'Pending') {
+                // Path B: Waiting for approval
+                if (loginScreen) loginScreen.classList.add('hidden');
+                return showPendingScreen();
+            }
+
+            // Path C: Approved user - Proceed to app
             if (loginScreen) loginScreen.classList.add('hidden');
             
             // Initialize app components
@@ -163,6 +149,85 @@ export function initAuth() {
                 initManualAccordion(); // Initialize the welcome page accordion
             }
         }
+    });
+}
+
+async function showRegistrationScreen(user) {
+    await loadContent('views/register.html', async () => {
+        const nameInput = document.getElementById('register-name');
+        const emailInput = document.getElementById('register-email');
+        const lguSelect = document.getElementById('register-lgu-select');
+        const logoutBtn = document.getElementById('btn-register-logout');
+        const form = document.getElementById('registration-form');
+
+        if (nameInput) nameInput.value = user.displayName || '';
+        if (emailInput) emailInput.value = user.email || '';
+        if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+        await populateLguSelector(lguSelect, { 
+            includeEmpty: true, 
+            emptyText: 'Select your LGU...',
+            filterByUser: false 
+        });
+
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btn-register-submit');
+                btn.disabled = true;
+                btn.textContent = 'Submitting...';
+
+                const formData = {
+                    lguId: lguSelect.value,
+                    position: document.getElementById('register-position').value,
+                    contactNumber: document.getElementById('register-contact').value
+                };
+
+                await createUserProfile(user, formData);
+            });
+        }
+    });
+}
+
+async function createUserProfile(user, formData) {
+    try {
+        const defaults = await window.getDefaultPermissions();
+        const { defaultLguId, ...modulePerms } = defaults || {};
+
+        const userData = {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            role: 'Pending',
+            assignedLguId: formData.lguId || null,
+            position: formData.position || '',
+            contactNumber: formData.contactNumber || '',
+            permissions: modulePerms || {},
+            registeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await window.db.collection('users').doc(user.uid).set(userData);
+        setCurrentUser(userData);
+        showPendingScreen();
+    } catch (error) {
+        console.error("Error creating user profile:", error);
+        alert("Failed to submit registration. Please try again.");
+        const btn = document.getElementById('btn-register-submit');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Submit Registration Request';
+        }
+    }
+}
+
+async function showPendingScreen() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.add('hidden');
+    
+    await loadContent('views/pending-approval.html', (loadId) => {
+        const logoutBtn = document.getElementById('btn-pending-logout');
+        if (logoutBtn) logoutBtn.addEventListener('click', logout);
     });
 }
                        

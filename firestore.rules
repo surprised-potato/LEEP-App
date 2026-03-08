@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- HELPER FUNCTIONS ---
+
+    // Get the requesting user's profile document
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the user is not in 'Pending' state
+    function isApproved() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role != 'Pending';
+    }
+
+    // System Admins have full bypass
+    function isSystemAdmin() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'System Admin';
+    }
+
+    // Check for "read" permission in a specific module
+    function hasModuleRead(module) {
+      return isApproved() && (
+        isSystemAdmin() ||
+        (getUserData().permissions.get(module, {}).get('read', false) == true)
+      );
+    }
+
+    // Check for "write" permission in a specific module
+    function hasModuleWrite(module) {
+      return isApproved() && (
+        isSystemAdmin() ||
+        (getUserData().permissions.get(module, {}).get('write', false) == true)
+      );
+    }
+
+    // --- COLLECTION RULES ---
+
+    // Users: Users can read their own profile. Admins and users with 'users' read permission can see all.
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        isSystemAdmin() ||
+        (isApproved() && getUserData().permissions.get('users', {}).get('read', false) == true)
+      );
+      // Registration: Any authenticated user can create their initial profile
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // Updates: Restricted to System Admins or those with 'users' write permission
+      allow update: if isAuthenticated() && (
+        isSystemAdmin() ||
+        (isApproved() && getUserData().permissions.get('users', {}).get('write', false) == true)
+      );
+      allow delete: if isSystemAdmin();
+    }
+
+    // Settings / Seed Data
+    match /settings/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if isSystemAdmin();
+    }
+
+    // LGU Management
+    match /lgus/{docId} {
+      allow read: if hasModuleRead('lgus');
+      allow write: if hasModuleWrite('lgus');
+    }
+
+    // Building Management (FSBD)
+    match /fsbds/{docId} {
+      allow read: if hasModuleRead('fsbds');
+      allow write: if hasModuleWrite('fsbds');
+    }
+
+    // Vehicle Management
+    match /vehicles/{docId} {
+      allow read: if hasModuleRead('vehicles');
+      allow write: if hasModuleWrite('vehicles');
+    }
+
+    // Equipment Management (MADE)
+    match /made_equipment/{docId} {
+      allow read: if hasModuleRead('made');
+      allow write: if hasModuleWrite('made');
+    }
+
+    // Consumption Reports (Electricity)
+    match /mecr_reports/{docId} {
+      allow read: if hasModuleRead('consumption');
+      allow write: if hasModuleWrite('consumption');
+    }
+
+    // Consumption Reports (Fuel)
+    match /mfcr_reports/{docId} {
+      allow read: if hasModuleRead('consumption');
+      allow write: if hasModuleWrite('consumption');
+    }
+
+    // SEU Identification
+    match /seu_findings/{docId} {
+      allow read: if hasModuleRead('seu');
+      allow write: if hasModuleWrite('seu');
+    }
+
+    // Recommendation Management (RIO)
+    match /rios/{docId} {
+      allow read: if hasModuleRead('rios');
+      allow write: if hasModuleWrite('rios');
+    }
+
+    // Project Management (PPA)
+    match /ppas/{docId} {
+      allow read: if hasModuleRead('ppas');
+      allow write: if hasModuleWrite('ppas');
+    }
+    
+    // Default catch-all: deny everything else
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

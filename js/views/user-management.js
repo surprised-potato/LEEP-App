@@ -1,4 +1,5 @@
 import { populateLguSelector } from './ui.js';
+import { getRolePreset } from './roles.js';
 
 let allUsers = [];
 let selectedUser = null;
@@ -24,6 +25,7 @@ export async function renderUserManagement() {
     const searchInput = document.getElementById('user-search');
     const lguFilter = document.getElementById('user-filter-lgu');
     const lguAssignSelect = document.getElementById('user-lgu-assign');
+    const roleAssignSelect = document.getElementById('user-role-assign');
     
     // Fetch data and populate selectors
     const [users, lgus] = await Promise.all([
@@ -36,6 +38,13 @@ export async function renderUserManagement() {
     
     allUsers = users;
     allLgus = lgus;
+
+    // Sort: Pending users at the top
+    allUsers.sort((a, b) => {
+        if (a.role === 'Pending' && b.role !== 'Pending') return -1;
+        if (a.role !== 'Pending' && b.role === 'Pending') return 1;
+        return (a.displayName || '').localeCompare(b.displayName || '');
+    });
 
     // Also populate the filter if it exists
     if (lguFilter) {
@@ -59,13 +68,21 @@ export async function renderUserManagement() {
             return;
         }
         
-        userListContainer.innerHTML = filtered.map(u => `
-            <div class="user-item p-4 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition-colors ${selectedUser?.id === u.id ? 'bg-blue-100 border-l-4 border-l-blue-600' : ''}" data-id="${u.id}">
-                <div class="font-bold text-gray-800">${u.displayName || 'Unknown User'}</div>
-                <div class="text-xs text-gray-500">${u.email}</div>
-                <div class="mt-1"><span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-700 uppercase font-bold">${u.role || 'Pending'}</span></div>
-            </div>
-        `).join('');
+        userListContainer.innerHTML = filtered.map(u => {
+            const isPending = u.role === 'Pending';
+            const badgeClass = isPending ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-gray-200 text-gray-700';
+            
+            return `
+                <div class="user-item p-4 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition-colors ${selectedUser?.id === u.id ? 'bg-blue-100 border-l-4 border-l-blue-600' : ''}" data-id="${u.id}">
+                    <div class="flex justify-between items-start">
+                        <div class="font-bold text-gray-800">${u.displayName || 'Unknown User'}</div>
+                        ${isPending ? '<div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>' : ''}
+                    </div>
+                    <div class="text-xs text-gray-500">${u.email}</div>
+                    <div class="mt-2"><span class="text-[10px] px-2 py-0.5 rounded-full uppercase font-black tracking-wider ${badgeClass}">${u.role || 'Pending'}</span></div>
+                </div>
+            `;
+        }).join('');
         
         document.querySelectorAll('.user-item').forEach(item => {
             item.addEventListener('click', () => selectUser(item.dataset.id));
@@ -74,6 +91,8 @@ export async function renderUserManagement() {
 
     searchInput.addEventListener('input', renderList);
     lguFilter?.addEventListener('change', renderList);
+    roleAssignSelect?.addEventListener('change', (e) => onRoleChange(e.target.value));
+
     renderList(); // Initial render
 
     document.getElementById('btn-save-permissions').addEventListener('click', savePermissions);
@@ -96,6 +115,7 @@ function selectUser(userId) {
     const emailEl = document.getElementById('selected-user-email');
     const modulesList = document.getElementById('modules-list');
     const lguAssignSelect = document.getElementById('user-lgu-assign');
+    const roleAssignSelect = document.getElementById('user-role-assign');
 
     panel.classList.remove('hidden');
     empty.classList.add('hidden');
@@ -103,9 +123,14 @@ function selectUser(userId) {
     nameEl.textContent = selectedUser.displayName || 'Unknown User';
     emailEl.textContent = selectedUser.email;
 
-    lguAssignSelect.value = selectedUser.assignedLguId || '';
-    const permissions = selectedUser.permissions || {};
+    if (roleAssignSelect) roleAssignSelect.value = selectedUser.role || 'Pending';
+    if (lguAssignSelect) lguAssignSelect.value = selectedUser.assignedLguId || '';
 
+    updatePermissionsGrid(selectedUser.permissions || {});
+}
+
+function updatePermissionsGrid(permissions) {
+    const modulesList = document.getElementById('modules-list');
     modulesList.innerHTML = modules.map(m => {
         const read = permissions[m.id]?.read ?? false;
         const write = permissions[m.id]?.write ?? false;
@@ -124,6 +149,16 @@ function selectUser(userId) {
     }).join('');
 }
 
+function onRoleChange(roleName) {
+    const preset = getRolePreset(roleName);
+    if (!preset) {
+        // Clear all if no preset (e.g., Pending)
+        updatePermissionsGrid({});
+        return;
+    }
+    updatePermissionsGrid(preset.permissions);
+}
+
 async function savePermissions() {
     if (!selectedUser) return;
     const btn = document.getElementById('btn-save-permissions');
@@ -138,19 +173,30 @@ async function savePermissions() {
         permissions[mod][type] = cb.checked;
     });
 
+    const role = document.getElementById('user-role-assign').value;
     const assignedLguId = document.getElementById('user-lgu-assign').value || null;
 
-    // Update both permissions and LGU assignment
+    // Update role, permissions and LGU assignment
     try {
         await window.db.collection('users').doc(selectedUser.id).update({ 
+            role,
             permissions, 
             assignedLguId 
         });
 
+        selectedUser.role = role;
         selectedUser.permissions = permissions;
         selectedUser.assignedLguId = assignedLguId;
+        
         btn.textContent = 'Saved!';
-        setTimeout(() => { btn.disabled = false; btn.textContent = 'Save Permissions'; }, 2000);
+        
+        // Refresh the list to show new role
+        renderUserManagement(); 
+
+        setTimeout(() => { 
+            btn.disabled = false; 
+            btn.textContent = 'Save Permissions'; 
+        }, 2000);
     } catch (error) {
         console.error('Error saving permissions:', error);
         alert('Failed to save permissions: ' + error.message);

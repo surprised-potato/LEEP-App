@@ -151,19 +151,33 @@ export async function initFsbdForm(docId = null) {
                 const yearField = document.getElementById('construction_year');
                 const areaField = document.getElementById('floor_area_sqm');
         
-                if (docId) {
-                    // EDIT MODE
+        if (docId) {
+            // EDIT MODE
             const data = await window.getFsbdById(docId);
-                    if (data) {
-                        idField.value = data.id;
-                        nameField.value = data.name || '';
-                        typeField.value = data.fsbd_type || '';
-                        addressField.value = data.address || '';
-                        yearField.value = data.construction_year || '';
-                        areaField.value = data.floor_area_sqm || '';
-                    }
-                } 
-                // else CREATE MODE (fields are empty by default)
+            if (data) {
+                idField.value = data.id;
+                nameField.value = data.name || '';
+                typeField.value = data.fsbd_type || '';
+                addressField.value = data.address || '';
+                yearField.value = data.construction_year || '';
+                areaField.value = data.floor_area_sqm || '';
+            }
+        } 
+        // else CREATE MODE (fields are empty by default)
+
+        // Read-only check
+        if (!checkPermission('fsbds', 'write')) {
+            form.querySelectorAll('input, select, textarea').forEach(el => el.disabled = true);
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.classList.add('hidden');
+            
+            // Add a notice
+            const notice = document.createElement('div');
+            notice.className = 'bg-amber-50 border border-amber-200 text-amber-700 p-4 mb-6 rounded-lg text-sm';
+            notice.innerHTML = '<strong>Read-Only Mode:</strong> You do not have permission to modify this building. All changes are disabled.';
+            form.prepend(notice);
+            return; // Don't attach submit listener
+        }
         
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();

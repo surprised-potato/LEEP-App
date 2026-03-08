@@ -1,5 +1,6 @@
 import { initLguSelector } from '../app.js';
 import { populateLguSelector } from './ui.js';
+import { checkPermission } from './state.js';
 
 const modules = [
     { id: 'dashboard', name: 'Dashboard' },
@@ -29,32 +30,36 @@ export async function renderAdmin() {
                 // --- SAMPLE DATA BUTTON LOGIC ---
                 const btnSample = document.getElementById('btn-sample-data');
                 if (btnSample) {
-            const exists = await window.checkSampleDataExists();
-                    
-                    if (exists) {
-                        btnSample.textContent = 'Delete Sample Data';
-                        btnSample.className = 'bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow focus:outline-none focus:shadow-outline transition duration-150 ease-in-out';
-                        btnSample.onclick = async () => {
-                            if (confirm('Are you sure you want to delete all sample data? This cannot be undone.')) {
+                    if (!checkPermission('admin', 'write')) {
+                        btnSample.classList.add('hidden');
+                    } else {
+                        const exists = await window.checkSampleDataExists();
+                        
+                        if (exists) {
+                            btnSample.textContent = 'Delete Sample Data';
+                            btnSample.className = 'bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow focus:outline-none focus:shadow-outline transition duration-150 ease-in-out';
+                            btnSample.onclick = async () => {
+                                if (confirm('Are you sure you want to delete all sample data? This cannot be undone.')) {
+                                    btnSample.disabled = true;
+                                    btnSample.textContent = 'Deleting...';
+                                    await window.deleteSampleData();
+                                    await initLguSelector(); // Refresh selector
+                                    await renderAdmin(); // Refresh view
+                                }
+                            };
+                        } else {
+                            btnSample.textContent = 'Generate Sample Data';
+                            btnSample.className = 'bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded shadow focus:outline-none focus:shadow-outline transition duration-150 ease-in-out';
+                            btnSample.onclick = async () => {
                                 btnSample.disabled = true;
-                                btnSample.textContent = 'Deleting...';
-                        await window.deleteSampleData();
+                                btnSample.textContent = 'Generating...';
+                                await window.createSampleData();
                                 await initLguSelector(); // Refresh selector
                                 await renderAdmin(); // Refresh view
-                            }
-                        };
-                    } else {
-                        btnSample.textContent = 'Generate Sample Data';
-                        btnSample.className = 'bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded shadow focus:outline-none focus:shadow-outline transition duration-150 ease-in-out';
-                        btnSample.onclick = async () => {
-                            btnSample.disabled = true;
-                            btnSample.textContent = 'Generating...';
-                    await window.createSampleData();
-                            await initLguSelector(); // Refresh selector
-                            await renderAdmin(); // Refresh view
-                        };
+                            };
+                        }
+                        btnSample.classList.remove('hidden');
                     }
-                    btnSample.classList.remove('hidden');
                 }
 
                 // --- TAB LOGIC ---
@@ -77,51 +82,58 @@ export async function renderAdmin() {
                 const vehicleMap = vehicles.reduce((acc, i) => ({...acc, [i.id]: i.plate_number}), {});
 
                 // Helper to render table rows
-                const renderRows = (tableId, items, nameFn, parentFn, editHash, deleteFn) => {
+                const renderRows = (tableId, moduleId, items, nameFn, parentFn, editHash, deleteFn) => {
                     const tbody = document.querySelector(`#${tableId} tbody`);
                     if (!tbody) return;
                     if (items.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="3" class="text-center">No items found</td></tr>';
                         return;
                     }
+                    
+                    const canWrite = checkPermission(moduleId, 'write');
+
                     tbody.innerHTML = items.map(item => `
                         <tr>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${nameFn(item)}</td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${parentFn(item)}</td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <a href="${editHash}/${item.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs mr-1">Edit</a>
-                                <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs btn-delete" data-id="${item.id}">Delete</button>
+                                ${canWrite ? `
+                                    <a href="${editHash}/${item.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs mr-1">Edit</a>
+                                    <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs btn-delete" data-id="${item.id}">Delete</button>
+                                ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
                             </td>
                         </tr>
                     `).join('');
 
                     // Attach delete listeners
-                    tbody.querySelectorAll('.btn-delete').forEach(btn => {
-                        btn.addEventListener('click', async (e) => {
-                            if(confirm('Are you sure you want to delete this item?')) {
-                                const id = e.target.getAttribute('data-id');
-                                const success = await deleteFn(id);
-                                if(success) {
-                                    e.target.closest('tr').remove();
-                                } else {
-                                    alert('Error deleting item.');
+                    if (canWrite) {
+                        tbody.querySelectorAll('.btn-delete').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                if(confirm('Are you sure you want to delete this item?')) {
+                                    const id = e.target.getAttribute('data-id');
+                                    const success = await deleteFn(id);
+                                    if(success) {
+                                        e.target.closest('tr').remove();
+                                    } else {
+                                        alert('Error deleting item.');
+                                    }
                                 }
-                            }
+                            });
                         });
-                    });
+                    }
                 };
 
                 // Render LGUs
-        renderRows('table-lgus', lgus, i => i.name, () => 'N/A', '#/lgus/edit', window.deleteLgu);
+        renderRows('table-lgus', 'lgus', lgus, i => i.name, () => 'N/A', '#/lgus/edit', window.deleteLgu);
 
                 // Render Buildings
-        renderRows('table-fsbds', fsbds, i => i.name, i => lguMap[i.lguId] || 'Unknown LGU', '#/fsbds/edit', window.deleteFsbd);
+        renderRows('table-fsbds', 'fsbds', fsbds, i => i.name, i => lguMap[i.lguId] || 'Unknown LGU', '#/fsbds/edit', window.deleteFsbd);
 
                 // Render Vehicles
-        renderRows('table-vehicles', vehicles, i => i.plate_number, i => lguMap[i.lguId] || 'Unknown LGU', '#/vehicles/edit', window.deleteVehicle);
+        renderRows('table-vehicles', 'vehicles', vehicles, i => i.plate_number, i => lguMap[i.lguId] || 'Unknown LGU', '#/vehicles/edit', window.deleteVehicle);
 
                 // Render MADE
-        renderRows('table-made', made, i => i.description_of_equipment, i => fsbdMap[i.fsbdId] || 'Unknown Building', '#/made/edit', window.deleteMade);
+        renderRows('table-made', 'made', made, i => i.description_of_equipment, i => fsbdMap[i.fsbdId] || 'Unknown Building', '#/made/edit', window.deleteMade);
 
                 // Render MECR (No edit page for reports in current structure, usually handled in consumption page, but we can't link easily without a specific edit route. 
                 // For now, we will disable Edit or link to consumption page. The prompt asked for edit/delete. 
@@ -130,17 +142,24 @@ export async function renderAdmin() {
                 // I'll leave Edit button but it might not work perfectly if route doesn't exist. 
                 // *Correction*: The user didn't ask to create edit forms for reports, just "actions to edit or delete". 
                 // I will hide Edit for reports since no route exists in app.js for /mecr/edit.
-                const renderRowsNoEdit = (tableId, items, nameFn, parentFn, deleteFn) => {
+                const renderRowsNoEdit = (tableId, moduleId, items, nameFn, parentFn, deleteFn) => {
                      const tbody = document.querySelector(`#${tableId} tbody`);
                      if (!tbody) return;
+                     
+                     const canWrite = checkPermission(moduleId, 'write');
+
                      tbody.innerHTML = items.map(item => `
                         <tr>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${nameFn(item)}</td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${parentFn(item)}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs btn-delete" data-id="${item.id}">Delete</button></td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                ${canWrite ? `<button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs btn-delete" data-id="${item.id}">Delete</button>` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
+                            </td>
                         </tr>
                     `).join('');
-                    tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', async (e) => { if(confirm('Delete?')) { await deleteFn(e.target.getAttribute('data-id')); e.target.closest('tr').remove(); } }));
+                    if (canWrite) {
+                        tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', async (e) => { if(confirm('Delete?')) { await deleteFn(e.target.getAttribute('data-id')); e.target.closest('tr').remove(); } }));
+                    }
                 };
 
         renderRowsNoEdit('table-mecr', mecr, i => `${i.reporting_year}-${i.reporting_month}`, i => fsbdMap[i.fsbdId] || 'Unknown', window.deleteMecrReport);
@@ -182,24 +201,32 @@ export async function renderAdmin() {
             `;
         }).join('');
 
-        document.getElementById('btn-save-default-perms').onclick = async () => {
-            const btn = document.getElementById('btn-save-default-perms');
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
-            
-            const newDefaults = {
-                defaultLguId: document.getElementById('default-lgu-selector')?.value || null
-            };
-            document.querySelectorAll('.default-perm-check').forEach(cb => {
-                const mod = cb.dataset.module;
-                const type = cb.dataset.type;
-                if (!newDefaults[mod]) newDefaults[mod] = {};
-                newDefaults[mod][type] = cb.checked;
-            });
+        const saveBtn = document.getElementById('btn-save-default-perms');
+        if (saveBtn) {
+            if (!checkPermission('admin', 'write')) {
+                saveBtn.classList.add('hidden');
+                document.querySelectorAll('.default-perm-check').forEach(cb => cb.disabled = true);
+                if (defaultLguSelector) defaultLguSelector.disabled = true;
+            } else {
+                saveBtn.onclick = async () => {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Saving...';
+                    
+                    const newDefaults = {
+                        defaultLguId: document.getElementById('default-lgu-selector')?.value || null
+                    };
+                    document.querySelectorAll('.default-perm-check').forEach(cb => {
+                        const mod = cb.dataset.module;
+                        const type = cb.dataset.type;
+                        if (!newDefaults[mod]) newDefaults[mod] = {};
+                        newDefaults[mod][type] = cb.checked;
+                    });
 
-            if (await window.updateDefaultPermissions(newDefaults)) {
-                btn.textContent = 'Saved!';
-                setTimeout(() => { btn.disabled = false; btn.textContent = 'Save Default Permissions'; }, 2000);
+                    if (await window.updateDefaultPermissions(newDefaults)) {
+                        saveBtn.textContent = 'Saved!';
+                        setTimeout(() => { saveBtn.disabled = false; saveBtn.textContent = 'Save Default Permissions'; }, 2000);
+                    }
+                };
             }
-        };
+        }
             }
