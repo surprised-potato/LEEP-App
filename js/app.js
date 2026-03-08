@@ -203,6 +203,14 @@ async function showRegistrationScreen(user) {
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                
+                const dpaConsent = document.getElementById('register-dpa-consent');
+                if (!dpaConsent || !dpaConsent.checked) {
+                    if (window.showToast) window.showToast('You must agree to the Data Privacy Notice to register.', 'error');
+                    else alert('You must agree to the Data Privacy Notice to register.');
+                    return;
+                }
+
                 const btn = document.getElementById('btn-register-submit');
                 btn.disabled = true;
                 btn.textContent = 'Submitting...';
@@ -210,7 +218,8 @@ async function showRegistrationScreen(user) {
                 const formData = {
                     lguId: lguSelect.value,
                     position: document.getElementById('register-position').value,
-                    contactNumber: document.getElementById('register-contact').value
+                    contactNumber: document.getElementById('register-contact').value,
+                    dpaConsent: true
                 };
 
                 await createUserProfile(user, formData);
@@ -233,6 +242,8 @@ async function createUserProfile(user, formData) {
             position: formData.position || '',
             contactNumber: formData.contactNumber || '',
             permissions: modulePerms || {},
+            dpaConsent: formData.dpaConsent || false,
+            dpaConsentTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
             registeredAt: firebase.firestore.FieldValue.serverTimestamp(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
