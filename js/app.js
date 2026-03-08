@@ -136,6 +136,10 @@ export function initAuth() {
             // Path C: Approved user - Proceed to app
             if (loginScreen) loginScreen.classList.add('hidden');
             
+            // Show sidebar for approved users
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.remove('hidden');
+
             // Initialize app components
             updateSidebarVisibility();
             await initLguSelector();

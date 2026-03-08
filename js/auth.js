@@ -41,8 +41,15 @@ export async function createSystemAdmin(displayName, email, password) {
     }
 
     const auth = firebase.auth();
+    const db = window.db;
 
     try {
+        // Guard: prevent creating admin if one already exists
+        const existing = await db.collection('users').where('role', '==', 'System Admin').limit(1).get();
+        if (!existing.empty) {
+            return { success: false, message: "A System Admin already exists. Contact them to create additional admins." };
+        }
+
         // Step 1: Create the user in Firebase Auth
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;

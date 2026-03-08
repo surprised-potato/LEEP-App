@@ -45,3 +45,7 @@ export function checkPermission(moduleId, type = 'read') {
     
     return currentUser.permissions?.[moduleId]?.[type] ?? false;
 }
+
+// Expose for non-module scripts (like api.js)
+window._checkPermission = checkPermission;
+window._getCurrentUser = getCurrentUser;

@@ -1,5 +1,26 @@
 // Firestore data interaction functions
 
+// --- Security Guards ---
+function _requireWrite(module) {
+    const user = window._getCurrentUser ? window._getCurrentUser() : null;
+    if (!user) throw new Error('Not authenticated');
+    if (user.role === 'Pending') throw new Error('Account pending approval');
+    if (window._checkPermission && !window._checkPermission(module, 'write')) {
+        throw new Error('Write permission denied for: ' + module);
+    }
+}
+
+function _requireLguMatch(dataLguId) {
+    const user = window._getCurrentUser ? window._getCurrentUser() : null;
+    if (!user) return; 
+    const restrictedRoles = ['LGU Admin', 'LGU EEC Officer', 'LGU Planner'];
+    if (restrictedRoles.includes(user.role) && user.assignedLguId) {
+        if (dataLguId && dataLguId !== user.assignedLguId) {
+            throw new Error('Access denied: Cannot write data for a different LGU');
+        }
+    }
+}
+
 // --- LGU Functions ---
 
 /**
@@ -26,6 +47,7 @@ async function getLguList() {
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
 async function createLgu(data) {
+    _requireWrite('lgus');
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -47,6 +69,7 @@ async function createLgu(data) {
  * @returns {Promise<boolean>} A promise that resolves to true on success, false on error.
  */
 async function updateLgu(docId, data) {
+    _requireWrite('lgus');
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
@@ -90,6 +113,7 @@ async function getLguById(docId) {
  * @param {string} docId 
  */
 async function deleteLgu(docId) {
+    _requireWrite('lgus');
     if (!window.db) return false;
     try {
         await db.collection('lgus').doc(docId).delete();
@@ -126,6 +150,8 @@ async function getFsbdList() {
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
 async function createFsbd(data) {
+    _requireWrite('fsbds');
+    _requireLguMatch(data.lguId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -147,6 +173,8 @@ async function createFsbd(data) {
  * @returns {Promise<boolean>} A promise that resolves to true on success, false on error.
  */
 async function updateFsbd(docId, data) {
+    _requireWrite('fsbds');
+    _requireLguMatch(data.lguId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
@@ -190,6 +218,7 @@ async function getFsbdById(docId) {
  * @param {string} docId 
  */
 async function deleteFsbd(docId) {
+    _requireWrite('fsbds');
     if (!window.db) return false;
     try {
         await db.collection('fsbds').doc(docId).delete();
@@ -228,6 +257,8 @@ async function getVehicleList() {
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
 async function createVehicle(data) {
+    _requireWrite('vehicles');
+    _requireLguMatch(data.lguId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -249,6 +280,8 @@ async function createVehicle(data) {
  * @returns {Promise<boolean>} A promise that resolves to true on success, false on error.
  */
 async function updateVehicle(docId, data) {
+    _requireWrite('vehicles');
+    _requireLguMatch(data.lguId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
@@ -292,6 +325,7 @@ async function getVehicleById(docId) {
  * @param {string} docId 
  */
 async function deleteVehicle(docId) {
+    _requireWrite('vehicles');
     if (!window.db) return false;
     try {
         await db.collection('vehicles').doc(docId).delete();
@@ -330,6 +364,8 @@ async function getMadeList() {
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
 async function createMade(data) {
+    _requireWrite('made');
+    _requireLguMatch(data.lguId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -351,6 +387,8 @@ async function createMade(data) {
  * @returns {Promise<boolean>} A promise that resolves to true on success, false on error.
  */
 async function updateMade(docId, data) {
+    _requireWrite('made');
+    _requireLguMatch(data.lguId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
@@ -394,6 +432,7 @@ async function getMadeById(docId) {
  * @param {string} docId 
  */
 async function deleteMade(docId) {
+    _requireWrite('made');
     if (!window.db) return false;
     try {
         await db.collection('made_equipment').doc(docId).delete();
@@ -431,6 +470,7 @@ async function getUserList() {
  * @returns {Promise<boolean>}
  */
 async function updateUserPermissions(uid, permissions) {
+    _requireWrite('users');
     if (!window.db) return false;
     try {
         await db.collection('users').doc(uid).update({ permissions });
@@ -462,6 +502,7 @@ async function getDefaultPermissions() {
  * @returns {Promise<boolean>}
  */
 async function updateDefaultPermissions(permissions) {
+    _requireWrite('users');
     if (!window.db) return false;
     try {
         await db.collection('settings').doc('default_permissions').set({ permissions });
@@ -657,6 +698,7 @@ async function checkSampleDataExists() {
 }
 
 async function createSampleData() {
+    _requireWrite('admin');
     if (!window.db) return false;
     const batch = db.batch();
 
@@ -680,6 +722,7 @@ async function createSampleData() {
 }
 
 async function deleteSampleData() {
+    _requireWrite('admin');
     if (!window.db) return false;
     const batch = db.batch();
 
@@ -729,6 +772,8 @@ async function getSeuList() {
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
 async function createSeu(data) {
+    _requireWrite('seu');
+    _requireLguMatch(data.lguId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -748,6 +793,7 @@ async function createSeu(data) {
  * @param {string} docId 
  */
 async function deleteSeu(docId) {
+    _requireWrite('seu');
     if (!window.db) return false;
     try {
         await db.collection('seu_findings').doc(docId).delete();
@@ -809,6 +855,10 @@ async function getMecrReports(fsbdId) {
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
 async function createMecrReport(data) {
+    _requireWrite('consumption');
+    // Note: MECR/MFCR require deeper LGU validation via the parent asset (FSBD/Vehicle)
+    // For now, we validate if the report object itself has an lguId if provided.
+    _requireLguMatch(data.lguId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -828,6 +878,7 @@ async function createMecrReport(data) {
  * @param {string} docId 
  */
 async function deleteMecrReport(docId) {
+    _requireWrite('consumption');
     if (!window.db) return false;
     try {
         await db.collection('mecr_reports').doc(docId).delete();
@@ -872,6 +923,8 @@ async function getMfcrReports(vehicleId) {
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
 async function createMfcrReport(data) {
+    _requireWrite('consumption');
+    _requireLguMatch(data.lguId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -891,6 +944,7 @@ async function createMfcrReport(data) {
  * @param {string} docId 
  */
 async function deleteMfcrReport(docId) {
+    _requireWrite('consumption');
     if (!window.db) return false;
     try {
         await db.collection('mfcr_reports').doc(docId).delete();
@@ -929,6 +983,7 @@ async function getRioList() {
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
 async function createRio(data) {
+    _requireWrite('rios');
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -950,6 +1005,7 @@ async function createRio(data) {
  * @returns {Promise<boolean>} A promise that resolves to true on success, false on error.
  */
 async function updateRio(docId, data) {
+    _requireWrite('rios');
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
@@ -993,6 +1049,7 @@ async function getRioById(docId) {
  * @param {string} docId 
  */
 async function deleteRio(docId) {
+    _requireWrite('rios');
     if (!window.db) return false;
     try {
         await db.collection('rios').doc(docId).delete();
@@ -1031,6 +1088,7 @@ async function getPpaList() {
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
 async function createPpa(data) {
+    _requireWrite('ppas');
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -1052,6 +1110,7 @@ async function createPpa(data) {
  * @returns {Promise<boolean>} A promise that resolves to true on success, false on error.
  */
 async function updatePpa(docId, data) {
+    _requireWrite('ppas');
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
@@ -1095,6 +1154,7 @@ async function getPpaById(docId) {
  * @param {string} docId 
  */
 async function deletePpa(docId) {
+    _requireWrite('ppas');
     if (!window.db) return false;
     try {
         await db.collection('ppas').doc(docId).delete();

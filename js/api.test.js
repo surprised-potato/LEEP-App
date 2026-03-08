@@ -29,6 +29,14 @@ describe('API Unit Tests', () => {
             collection: jest.fn((name) => mockCollection)
         };
 
+        // Mock security globals
+        window._getCurrentUser = jest.fn(() => ({
+            uid: 'test-user',
+            role: 'System Admin',
+            permissions: {}
+        }));
+        window._checkPermission = jest.fn(() => true);
+
         // Silence console.log/error during tests
         jest.spyOn(console, 'log').mockImplementation(() => {});
         jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -180,5 +188,50 @@ describe('API Unit Tests', () => {
         mockCollection.add.mockResolvedValue({ id: 'ppa-1' });
         await api.createPpa({ name: 'Project X' });
         expect(window.db.collection).toHaveBeenCalledWith('ppas');
+    });
+
+    // --- Security Guard Tests ---
+    describe('Security Guard Enforcement', () => {
+        test('should throw error if not authenticated', async () => {
+            window._getCurrentUser.mockReturnValue(null);
+            await expect(api.createLgu({ name: 'fail' })).rejects.toThrow('Not authenticated');
+        });
+
+        test('should throw error if user is Pending', async () => {
+            window._getCurrentUser.mockReturnValue({ role: 'Pending' });
+            await expect(api.createLgu({ name: 'fail' })).rejects.toThrow('Account pending approval');
+        });
+
+        test('should throw error if missing write permission', async () => {
+            window._getCurrentUser.mockReturnValue({ role: 'Auditor', permissions: {} });
+            window._checkPermission.mockReturnValue(false);
+            await expect(api.createLgu({ name: 'fail' })).rejects.toThrow('Write permission denied for: lgus');
+        });
+
+        test('should block LGU mismatch for restricted roles', async () => {
+            window._getCurrentUser.mockReturnValue({ 
+                role: 'LGU Admin', 
+                assignedLguId: 'lgu-a',
+                permissions: { fsbds: { write: true } }
+            });
+            window._checkPermission.mockReturnValue(true);
+            
+            // Try to create building for LGU B
+            await expect(api.createFsbd({ lguId: 'lgu-b', name: 'Other LGU Bldg' }))
+                .rejects.toThrow('Access denied: Cannot write data for a different LGU');
+        });
+
+        test('should allow LGU match for restricted roles', async () => {
+            window._getCurrentUser.mockReturnValue({ 
+                role: 'LGU Admin', 
+                assignedLguId: 'lgu-a',
+                permissions: { fsbds: { write: true } }
+            });
+            window._checkPermission.mockReturnValue(true);
+            mockCollection.add.mockResolvedValue({ id: 'ok' });
+
+            const result = await api.createFsbd({ lguId: 'lgu-a', name: 'My LGU Bldg' });
+            expect(result).toBe('ok');
+        });
     });
 });

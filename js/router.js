@@ -1,6 +1,7 @@
 // js/router.js
 import { updateSidebarActiveState } from './views/ui.js';
 import { loadContent } from './app.js';
+import { checkPermission } from './views/state.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderLguList, initLguForm } from './views/lgus.js';
 import { renderFsbdList, initFsbdForm } from './views/fsbds.js';
