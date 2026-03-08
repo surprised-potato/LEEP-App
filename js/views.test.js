@@ -2,21 +2,29 @@
  * @jest-environment jsdom
  */
 
-// Mock API functions globally before requiring app.js
-global.getLguList = jest.fn();
-global.createLgu = jest.fn();
-global.updateLgu = jest.fn();
-global.getFsbdList = jest.fn();
-global.getVehicleList = jest.fn();
-global.getMadeList = jest.fn();
-global.getRioList = jest.fn();
-global.getPpaList = jest.fn();
+// Mock API functions globally
+global.window = global;
+
+window.getLguList = jest.fn().mockResolvedValue([]);
+window.createLgu = jest.fn();
+window.updateLgu = jest.fn();
+window.getFsbdList = jest.fn().mockResolvedValue([]);
+window.getVehicleList = jest.fn().mockResolvedValue([]);
+window.getMadeList = jest.fn().mockResolvedValue([]);
+window.getRioList = jest.fn().mockResolvedValue([]);
+window.getPpaList = jest.fn().mockResolvedValue([]);
+window.getUserList = jest.fn().mockResolvedValue([]);
+window.getMecrReports = jest.fn().mockResolvedValue([]);
+window.getTripTickets = jest.fn().mockResolvedValue([]);
+window.getSeuList = jest.fn().mockResolvedValue([]);
+window.getDefaultPermissions = jest.fn().mockResolvedValue({});
 
 // Mock Firestore db for dashboard
-global.window = global;
-global.window.db = {
+window.db = {
     collection: jest.fn(() => ({
-        get: jest.fn().mockResolvedValue({ docs: [] })
+        get: jest.fn().mockResolvedValue({ docs: [] }),
+        add: jest.fn(),
+        doc: jest.fn()
     }))
 };
 
@@ -31,7 +39,21 @@ const localStorageMock = (() => {
 })();
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-const app = require('./app.js');
+// Mock state permissions
+jest.mock('./views/state.js', () => ({
+    checkPermission: jest.fn().mockReturnValue(true),
+    getCurrentLguId: jest.fn().mockReturnValue(null),
+    getCurrentUser: jest.fn().mockReturnValue({ role: 'System Admin', assignedLguId: null })
+}));
+
+import { renderLguList, initLguForm } from './views/lgus.js';
+import { renderFsbdList } from './views/fsbds.js';
+import { renderDashboard } from './views/dashboard.js';
+import { renderVehicleList } from './views/vehicles.js';
+import { renderMadeList } from './views/made.js';
+import { renderRioList } from './views/rios.js';
+import { renderPpaList } from './views/ppas.js';
+import { renderAdmin } from './views/admin.js';
 
 describe('View Logic Tests', () => {
     
@@ -42,15 +64,19 @@ describe('View Logic Tests', () => {
 
     test('renderLguList should populate table', async () => {
         // Setup DOM
-        document.body.innerHTML = '<tbody id="lgu-table-body"></tbody>';
+        document.body.innerHTML = `
+            <div id="lgu-table-body"></div>
+            <div id="lgu-empty-state" class="hidden"></div>
+            <div id="lgu-loading"></div>
+        `;
         
         // Mock Data
-        global.getLguList.mockResolvedValue([
+        window.getLguList.mockResolvedValue([
             { id: '1', name: 'Manila', region: 'NCR' }
         ]);
 
         // Act
-        await app.renderLguList();
+        await renderLguList();
 
         // Assert
         const tableBody = document.getElementById('lgu-table-body');
@@ -60,15 +86,19 @@ describe('View Logic Tests', () => {
 
     test('renderFsbdList should populate table', async () => {
         // Setup DOM
-        document.body.innerHTML = '<tbody id="fsbd-table-body"></tbody>';
+        document.body.innerHTML = `
+            <div id="fsbd-table-body"></div>
+            <div id="fsbd-empty-state" class="hidden"></div>
+            <div id="fsbd-loading"></div>
+        `;
         
         // Mock Data
-        global.getFsbdList.mockResolvedValue([
+        window.getFsbdList.mockResolvedValue([
             { id: '1', name: 'City Hall', fsbd_type: 'Office' }
         ]);
 
         // Act
-        await app.renderFsbdList();
+        await renderFsbdList();
 
         // Assert
         const tableBody = document.getElementById('fsbd-table-body');
@@ -77,21 +107,35 @@ describe('View Logic Tests', () => {
 
     test('renderDashboard should call API functions', async () => {
         // Setup DOM elements expected by dashboard
-        document.body.innerHTML = '<div id="stats-total-buildings"></div><div id="stats-total-vehicles"></div><div id="stats-high-rios"></div><div id="stats-ongoing-ppas"></div>';
+        document.body.innerHTML = `
+            <div id="stats-total-buildings"></div>
+            <div id="stats-total-vehicles"></div>
+            <div id="stats-high-rios"></div>
+            <div id="stats-ongoing-ppas"></div>
+            <div id="stats-total-electricity"></div>
+            <div id="stats-total-fuel"></div>
+            <div id="stats-total-savings"></div>
+            <div id="stats-total-investment"></div>
+            <tbody id="dashboard-recent-consumption-body"></tbody>
+        `;
 
-        await app.renderDashboard();
+        await renderDashboard();
 
-        expect(global.getFsbdList).toHaveBeenCalled();
-        expect(global.getVehicleList).toHaveBeenCalled();
+        expect(window.getFsbdList).toHaveBeenCalled();
+        expect(window.getVehicleList).toHaveBeenCalled();
     });
 
     test('renderVehicleList should populate table', async () => {
-        document.body.innerHTML = '<tbody id="vehicle-table-body"></tbody>';
-        global.getVehicleList.mockResolvedValue([
+        document.body.innerHTML = `
+            <div id="vehicle-table-body"></div>
+            <div id="vehicle-empty-state" class="hidden"></div>
+            <div id="vehicle-loading"></div>
+        `;
+        window.getVehicleList.mockResolvedValue([
             { id: 'v1', plate_number: 'ABC-123', make: 'Toyota' }
         ]);
 
-        await app.renderVehicleList();
+        await renderVehicleList();
 
         const tableBody = document.getElementById('vehicle-table-body');
         expect(tableBody.innerHTML).toContain('ABC-123');
@@ -99,15 +143,19 @@ describe('View Logic Tests', () => {
     });
 
     test('renderMadeList should populate table with building names', async () => {
-        document.body.innerHTML = '<tbody id="made-table-body"></tbody>';
-        global.getMadeList.mockResolvedValue([
+        document.body.innerHTML = `
+            <div id="made-table-body"></div>
+            <div id="made-empty-state" class="hidden"></div>
+            <div id="made-loading"></div>
+        `;
+        window.getMadeList.mockResolvedValue([
             { id: 'm1', description_of_equipment: 'AC Unit', fsbdId: 'b1' }
         ]);
-        global.getFsbdList.mockResolvedValue([
+        window.getFsbdList.mockResolvedValue([
             { id: 'b1', name: 'Main Office' }
         ]);
 
-        await app.renderMadeList();
+        await renderMadeList();
 
         const tableBody = document.getElementById('made-table-body');
         expect(tableBody.innerHTML).toContain('AC Unit');
@@ -115,16 +163,20 @@ describe('View Logic Tests', () => {
     });
 
     test('renderRioList should populate table with asset names', async () => {
-        document.body.innerHTML = '<tbody id="rio-table-body"></tbody>';
-        global.getRioList.mockResolvedValue([
+        document.body.innerHTML = `
+            <div id="rio-table-body"></div>
+            <div id="rio-empty-state" class="hidden"></div>
+            <div id="rio-loading"></div>
+        `;
+        window.getRioList.mockResolvedValue([
             { id: 'r1', proposed_action: 'Install LED', fsbdId: 'b1' }
         ]);
-        global.getFsbdList.mockResolvedValue([
+        window.getFsbdList.mockResolvedValue([
             { id: 'b1', name: 'Main Office' }
         ]);
-        global.getVehicleList.mockResolvedValue([]);
+        window.getVehicleList.mockResolvedValue([]);
 
-        await app.renderRioList();
+        await renderRioList();
 
         const tableBody = document.getElementById('rio-table-body');
         expect(tableBody.innerHTML).toContain('Install LED');
@@ -132,21 +184,30 @@ describe('View Logic Tests', () => {
     });
 
     test('renderPpaList should populate table', async () => {
-        document.body.innerHTML = '<tbody id="ppa-table-body"></tbody>';
-        global.getPpaList.mockResolvedValue([
+        document.body.innerHTML = `
+            <div id="ppa-table-body"></div>
+            <div id="ppa-empty-state" class="hidden"></div>
+            <div id="ppa-loading"></div>
+        `;
+        window.getPpaList.mockResolvedValue([
             { id: 'p1', project_name: 'Solar Panel Install' }
         ]);
 
-        await app.renderPpaList();
+        await renderPpaList();
 
         const tableBody = document.getElementById('ppa-table-body');
         expect(tableBody.innerHTML).toContain('Solar Panel Install');
     });
 
     test('renderAdmin should fetch all data', async () => {
-        document.body.innerHTML = '<div id="table-lgus"><tbody></tbody></div><div id="table-fsbds"><tbody></tbody></div>'; // Partial DOM
-        await app.renderAdmin();
-        expect(global.getLguList).toHaveBeenCalled();
+        document.body.innerHTML = `
+        <div id="table-lgus"><tbody></tbody></div>
+        <div id="table-fsbds"><tbody></tbody></div>
+        <div id="admin-user-table-body"></div>
+        <div id="admin-default-modules"></div>
+        `;
+        await renderAdmin();
+        expect(window.getLguList).toHaveBeenCalled();
     });
 
     test('initLguForm should handle form submission', async () => {
@@ -155,35 +216,35 @@ describe('View Logic Tests', () => {
             <form id="lgu-form">
                 <h2 id="form-title"></h2>
                 <input type="hidden" id="lgu-id">
-                <input type="text" id="name">
-                <input type="text" id="region">
-                <input type="text" id="province">
+                <input type="text" id="name" value="Test City">
+                <input type="text" id="region" value="Test Region">
+                <input type="text" id="province" value="Test Province">
                 <button type="submit">Save</button>
             </form>
             <select id="lgu-selector"></select>
+            <div id="form-error" class="hidden"></div>
+            <div id="form-success" class="hidden"></div>
+            <div id="submit-btn-text"></div>
+            <div id="submit-btn-spinner" class="hidden"></div>
         `;
 
         // Mock successful creation and list fetch
-        global.createLgu.mockResolvedValue('new-id');
-        global.getLguList.mockResolvedValue([]); 
+        window.createLgu.mockResolvedValue('new-id');
+        window.getLguList.mockResolvedValue([]); 
 
         // Initialize form logic
-        await app.initLguForm();
-
-        // Simulate user input
-        document.getElementById('name').value = 'Test City';
-        document.getElementById('region').value = 'Test Region';
-        document.getElementById('province').value = 'Test Province';
+        await initLguForm();
 
         // Simulate submit
         const form = document.getElementById('lgu-form');
-        form.dispatchEvent(new Event('submit'));
+        const event = new Event('submit', { bubbles: true, cancelable: true });
+        form.dispatchEvent(event);
 
         // Wait for async operations
         await new Promise(resolve => setTimeout(resolve, 0));
 
         // Assert
-        expect(global.createLgu).toHaveBeenCalledWith({
+        expect(window.createLgu).toHaveBeenCalledWith({
             name: 'Test City',
             region: 'Test Region',
             province: 'Test Province'

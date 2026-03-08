@@ -6,7 +6,7 @@ The LGU Energy Efficiency and Conservation (EEC) Platform is a serverless client
 ## Architecture
 - **Frontend**: HTML5, CSS3 (Bootstrap 5), Vanilla JavaScript (ES6+ Modules).
 - **Backend/Database**: Firebase Firestore (NoSQL).
-- **Hosting**: GitHub Pages.
+- **Hosting**: Firebase Hosting (`leep-energy-app.web.app`).
 - **State Management**: Handled via `state.js` and local JavaScript variables.
 - **Routing**: A custom hash-based front-end router (`router.js`).
 
@@ -20,7 +20,16 @@ The data access layer consists of asynchronous CRUD wrappers over Firebase Fires
 6. **Recommendations (RIO) & Projects (PPA)**: Tracks energy-saving initiatives, their priorities, and their financial implications (`createRio`, `createPpa`, etc.).
 7. **Significant Energy Use (SEU)**: `getSeuList`, `createSeu`, `deleteSeu`.
 8. **User Management & RBAC**: `getUserList`, `updateUserPermissions`, `getRolePreset`, and `checkPermission`. Manages roles (`System Admin`, `LGU Admin`, `LGU EEC Officer`, etc.) and granular module-level permissions.
-9. **Sample Data**: Functions to bootstrap the system with initial dummy data (`checkSampleDataExists`, `createSampleData`, `deleteSampleData`).
+23. **API Security Guards**: `_requireWrite` (checks module-specific write permissions) and `_requireLguMatch` (validates LGU data scoping for restricted roles). These ensure that any data manipulation is authorized at the function-entry point.
+24. **Sample Data**: Functions to bootstrap the system with initial dummy data (`checkSampleDataExists`, `createSampleData`, `deleteSampleData`).
+
+## Deployment
+- **Platform**: Firebase Hosting.
+- **Project ID**: `leep-energy-app`.
+- **Command**: `firebase deploy --only hosting,firestore`.
+- **Configuration**:
+    - `firebase.json`: Defines the root as the public directory and ignores development files.
+    - `.firebaserc`: Links the local environment to the active Firebase project.
 
 ## System Workflows
 1. **Authentication & RBAC Lifecycle**:

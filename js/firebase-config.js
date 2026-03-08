@@ -1,34 +1,25 @@
 // ------------------------------------------------------------------
 // FIREBASE CONFIGURATION
 // ------------------------------------------------------------------
-// ACTION REQUIRED:
-// 1. Go to your Firebase project console.
-// 2. In the project settings, find your web app's configuration object.
-// 3. Paste that configuration object here.
+// This file is automatically updated by the agent.
 // ------------------------------------------------------------------
 
 const firebaseConfig = {
-
-  apiKey: "AIzaSyAhQH37Sen1KBPstihCuj4AJLPUWMKIQ9k",
-
-  authDomain: "leep-c5473.firebaseapp.com",
-
-  projectId: "leep-c5473",
-
-  storageBucket: "leep-c5473.firebasestorage.app",
-
-  messagingSenderId: "893452490886",
-
-  appId: "1:893452490886:web:fcd29ac10bbf4cc6165907"
-
+  apiKey: "AIzaSyBd39Mrwsc6pGT2mO0j-DO-Rbu2MHRkE3g",
+  authDomain: "leep-energy-app.firebaseapp.com",
+  projectId: "leep-energy-app",
+  storageBucket: "leep-energy-app.firebasestorage.app",
+  messagingSenderId: "244180149129",
+  appId: "1:244180149129:web:f348509fa85d5b921f3758"
 };
-
 
 // Initialize Firebase
 if (firebaseConfig && firebaseConfig.apiKey) {
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     window.db = firebase.firestore(); // Assign to window.db for global access
-    console.log("Firebase initialized successfully.");
+    console.log("Firebase initialized successfully for " + firebaseConfig.projectId);
 } else {
     console.error("Firebase configuration is missing. Please update js/firebase-config.js");
 }

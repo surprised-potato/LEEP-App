@@ -13,14 +13,14 @@ export async function renderDashboard(loadId) {
                 window.getRioList(),
                 window.getPpaList(),
                 window.db.collection('mecr_reports').get().catch(e => { console.error(e); return { docs: [] }; }),
-                window.db.collection('mfcr_reports').get().catch(e => { console.error(e); return { docs: [] }; }),
+                window.db.collection('trip_tickets').get().catch(e => { console.error(e); return { docs: [] }; }),
                     ]);
                     
                     // Check if this render is still valid for the current view
         if (loadId && loadId !== getCurrentLoadId()) return;
 
                     let mecrReports = mecrResults.docs.map(doc => doc.data());
-                    let mfcrReports = mfcrResults.docs.map(doc => doc.data());
+                    let tripTickets = mfcrResults.docs.map(doc => doc.data());
 
                     // Filter Data by LGU
             const currentLguId = getCurrentLguId();
@@ -34,7 +34,7 @@ export async function renderDashboard(loadId) {
                         rios = rios.filter(r => allowedBldgIds.has(r.fsbdId) || allowedVehicleIds.has(r.vehicleId));
                         
                         mecrReports = mecrReports.filter(r => allowedBldgIds.has(r.fsbdId));
-                        mfcrReports = mfcrReports.filter(r => allowedVehicleIds.has(r.vehicleId));
+                        tripTickets = tripTickets.filter(t => allowedVehicleIds.has(t.vehicleId));
 
                         // Filter PPAs based on filtered RIOs
                         const allowedRioIds = new Set(rios.map(r => r.id));
@@ -43,7 +43,7 @@ export async function renderDashboard(loadId) {
 
                     // Calculate additional KPIs
                     const totalElectricity = mecrReports.reduce((sum, r) => sum + (Number(r.electricity_consumption_kwh) || 0), 0);
-                    const totalFuel = mfcrReports.reduce((sum, r) => sum + (Number(r.fuel_consumed_liters) || 0), 0);
+                    const totalFuel = tripTickets.reduce((sum, t) => sum + (Number(t.fuelLiters) || 0), 0);
                     const totalSavings = rios.reduce((sum, r) => sum + (Number(r.estimated_savings_php) || 0), 0);
                     const totalInvestment = ppas.reduce((sum, p) => sum + (Number(p.actual_cost_php) || Number(p.estimated_cost_php) || 0), 0);
 
@@ -78,15 +78,18 @@ export async function renderDashboard(loadId) {
                             amount: `${Number(r.electricity_consumption_kwh).toLocaleString()} kWh`,
                             colorClass: 'text-indigo-900 bg-indigo-200'
                         })),
-                        ...mfcrReports.map(r => ({
-                            date: `${r.reporting_year}-${String(r.reporting_month).padStart(2, '0')}`,
-                            year: r.reporting_year,
-                            month: r.reporting_month,
-                            type: 'Fuel',
-                            asset: vehicleMap[r.vehicleId] || 'Unknown Vehicle',
-                            amount: `${Number(r.fuel_consumed_liters).toLocaleString()} L`,
-                            colorClass: 'text-teal-900 bg-teal-200'
-                        }))
+                        ...tripTickets.map(t => {
+                            const [yyyy, mm] = t.date.split('-');
+                            return {
+                                date: t.date,
+                                year: Number(yyyy),
+                                month: Number(mm),
+                                type: 'Fuel (Trip)',
+                                asset: vehicleMap[t.vehicleId] || 'Unknown Vehicle',
+                                amount: `${Number(t.fuelLiters).toLocaleString()} L`,
+                                colorClass: 'text-teal-900 bg-teal-200'
+                            };
+                        })
                     ];
 
                     // Sort by date descending

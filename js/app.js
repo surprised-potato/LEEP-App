@@ -3,6 +3,32 @@ import { applyHeroHeader, initManualAccordion, populateLguSelector, updateSideba
 import { handleRouting } from './router.js';
 import { loginWithGoogle, logout } from './auth.js';
 
+// --- GLOBAL TOAST SYSTEM ---
+window.showToast = (message, type = 'success') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    const bgClass = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    
+    toast.className = `${bgClass} text-white px-6 py-3 rounded-lg shadow-lg flex items-center justify-between min-w-[300px] animate-fade-in-up transition-opacity duration-300 transform`;
+    toast.innerHTML = `
+        <span class="font-semibold text-sm">${message}</span>
+        <button class="ml-4 text-white hover:text-gray-200 focus:outline-none">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    const closeBtn = toast.querySelector('button');
+    const removeToast = () => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    };
+
+    closeBtn.addEventListener('click', removeToast);
+    setTimeout(removeToast, 5000); // Auto remove after 5 seconds
+};
+
 // --- FUNCTIONS ---
 
 export async function initLguSelector() {

@@ -1,5 +1,6 @@
 import { populateLguSelector } from './ui.js';
-import { getRolePreset } from './roles.js';
+import { getRolePreset, getAssignableRoles } from './roles.js';
+import { getCurrentUser } from './state.js';
 
 let allUsers = [];
 let selectedUser = null;
@@ -36,8 +37,20 @@ export async function renderUserManagement() {
         })
     ]);
     
+    const currentUser = getCurrentUser();
+    
     allUsers = users;
     allLgus = lgus;
+
+    // Filter users: 
+    // - Non-System Admins cannot see System Admins.
+    // - LGU-restricted roles can only see users in their LGU (or Pending users with no LGU).
+    if (currentUser.role !== 'System Admin') {
+        allUsers = allUsers.filter(u => u.role !== 'System Admin');
+        if (currentUser.assignedLguId) {
+            allUsers = allUsers.filter(u => !u.assignedLguId || u.assignedLguId === currentUser.assignedLguId);
+        }
+    }
 
     // Sort: Pending users at the top
     allUsers.sort((a, b) => {
@@ -116,6 +129,7 @@ function selectUser(userId) {
     const modulesList = document.getElementById('modules-list');
     const lguAssignSelect = document.getElementById('user-lgu-assign');
     const roleAssignSelect = document.getElementById('user-role-assign');
+    const currentUser = getCurrentUser();
 
     panel.classList.remove('hidden');
     empty.classList.add('hidden');
@@ -123,8 +137,29 @@ function selectUser(userId) {
     nameEl.textContent = selectedUser.displayName || 'Unknown User';
     emailEl.textContent = selectedUser.email;
 
+    // Populate role roles based on escalation hierarchy
+    const assignableRoles = getAssignableRoles(currentUser.role);
+    // Add current role of user if it's already set (to avoid empty select if they are same level as manager somehow, though they shouldn't be visible)
+    if (selectedUser.role && !assignableRoles.includes(selectedUser.role)) {
+        assignableRoles.push(selectedUser.role);
+    }
+    
+    roleAssignSelect.innerHTML = assignableRoles
+        .map(r => `<option value="${r}">${r}</option>`)
+        .join('');
+    
     if (roleAssignSelect) roleAssignSelect.value = selectedUser.role || 'Pending';
-    if (lguAssignSelect) lguAssignSelect.value = selectedUser.assignedLguId || '';
+    
+    if (lguAssignSelect) {
+        lguAssignSelect.value = selectedUser.assignedLguId || '';
+        // Lock LGU for LGU-restricted admins
+        if (currentUser.assignedLguId) {
+            lguAssignSelect.value = currentUser.assignedLguId;
+            lguAssignSelect.disabled = true;
+        } else {
+            lguAssignSelect.disabled = false;
+        }
+    }
 
     updatePermissionsGrid(selectedUser.permissions || {});
 }
@@ -178,7 +213,7 @@ async function savePermissions() {
 
     // Update role, permissions and LGU assignment
     try {
-        await window.db.collection('users').doc(selectedUser.id).update({ 
+        await window.updateUserRole(selectedUser.id, { 
             role,
             permissions, 
             assignedLguId 

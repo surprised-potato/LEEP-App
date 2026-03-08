@@ -1,42 +1,146 @@
 import { getCurrentLguId, checkPermission } from './state.js';
 
+// --- Module-level state for search, sort, and data ---
+let fullPpaList = [];
+let currentSort = { column: 'project_name', direction: 'asc' };
+let currentSearchTerm = '';
+
+/**
+ * Filters and sorts the full list based on current state.
+ */
+function getProcessedList() {
+    let processedList = fullPpaList;
+
+    // 1. Filter by search term
+    if (currentSearchTerm) {
+        const lowercasedTerm = currentSearchTerm.toLowerCase();
+        processedList = fullPpaList.filter(ppa => 
+            (ppa.project_name || '').toLowerCase().includes(lowercasedTerm) ||
+            (ppa.status || '').toLowerCase().includes(lowercasedTerm)
+        );
+    }
+
+    // 2. Sort the list
+    processedList.sort((a, b) => {
+        const col = currentSort.column;
+        let valA = a[col];
+        let valB = b[col];
+
+        if (valA == null) return 1;
+        if (valB == null) return -1;
+
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            return currentSort.direction === 'asc' ? valA - valB : valB - valA;
+        }
+
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+
+        if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    return processedList;
+}
+
+/**
+ * Renders the PPA table based on the current state.
+ */
+function renderPpaTable() {
+    const tableBody = document.getElementById('ppa-table-body');
+    if (!tableBody) return;
+
+    const processedList = getProcessedList();
+    const canWrite = checkPermission('ppas', 'write');
+
+    if (processedList.length > 0) {
+        tableBody.innerHTML = processedList.map(ppa => `
+            <tr>
+                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.project_name}</td>
+                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.status}</td>
+                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right font-mono">${ppa.estimated_cost_php != null ? Number(ppa.estimated_cost_php).toLocaleString() : 'N/A'}</td>
+                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right font-mono">${ppa.actual_cost_php != null ? Number(ppa.actual_cost_php).toLocaleString() : 'N/A'}</td>
+                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    ${canWrite ? `
+                        <a href="#/ppas/edit/${ppa.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                    ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
+                </td>
+            </tr>
+        `).join('');
+    } else {
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4">${currentSearchTerm ? 'No projects match your search.' : 'No projects found.'}</td></tr>`;
+    }
+
+    // Update sort indicators
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+        const indicator = th.querySelector('.sort-indicator');
+        if (indicator) {
+            if (th.dataset.sort === currentSort.column) {
+                indicator.textContent = currentSort.direction === 'asc' ? '▲' : '▼';
+            } else {
+                indicator.textContent = '';
+            }
+        }
+    });
+}
+
 export async function renderPpaList() {
-                const tableBody = document.getElementById('ppa-table-body');
-                if (!tableBody) return;
+    const tableBody = document.getElementById('ppa-table-body');
+    if (!tableBody) return;
 
-        let ppas = await window.getPpaList();
-                
-                // To filter PPAs, we need to know which RIOs they are related to, and if those RIOs belong to the current LGU.
-                // This is complex because PPAs have an array of RIO IDs.
-                // Simplified approach: Fetch RIOs for current LGU, get their IDs, filter PPAs that contain at least one valid RIO.
-        const currentLguId = getCurrentLguId();
-                if (currentLguId) {
-            let [rios, buildings, vehicles] = await Promise.all([window.getRioList(), window.getFsbdList(), window.getVehicleList()]);
-                    const allowedAssetIds = new Set([...buildings.filter(b => b.lguId === currentLguId).map(b => b.id), ...vehicles.filter(v => v.lguId === currentLguId).map(v => v.id)]);
-                    const allowedRioIds = new Set(rios.filter(r => allowedAssetIds.has(r.fsbdId) || allowedAssetIds.has(r.vehicleId)).map(r => r.id));
-                    
-                    ppas = ppas.filter(ppa => ppa.relatedRioIds && ppa.relatedRioIds.some(id => allowedRioIds.has(id)));
-                }
+    // Reset state for this view
+    currentSearchTerm = '';
+    currentSort = { column: 'project_name', direction: 'asc' };
 
-                const canWrite = checkPermission('ppas', 'write');
+    // Initial loading state
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">Loading...</td></tr>';
+    
+    // Handle Add Button visibility
+    const addBtn = document.getElementById('btn-add-ppa');
+    if (addBtn) {
+        addBtn.classList.toggle('hidden', !checkPermission('ppas', 'write'));
+    }
 
-                if (ppas.length > 0) {
-                    tableBody.innerHTML = ppas.map(ppa => `
-                        <tr>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.project_name}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${ppa.status}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right font-mono">${ppa.estimated_cost_php != null ? Number(ppa.estimated_cost_php).toLocaleString() : 'N/A'}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right font-mono">${ppa.actual_cost_php != null ? Number(ppa.actual_cost_php).toLocaleString() : 'N/A'}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                ${canWrite ? `
-                                    <a href="#/ppas/edit/${ppa.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
-                                ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
-                            </td>
-                        </tr>
-                    `).join('');
-                } else {
-                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No projects found.</td></tr>';
-                }
+    let ppas = await window.getPpaList();
+    
+    const currentLguId = getCurrentLguId();
+    if (currentLguId) {
+        let [rios, buildings, vehicles] = await Promise.all([window.getRioList(), window.getFsbdList(), window.getVehicleList()]);
+        const allowedAssetIds = new Set([...buildings.filter(b => b.lguId === currentLguId).map(b => b.id), ...vehicles.filter(v => v.lguId === currentLguId).map(v => v.id)]);
+        const allowedRioIds = new Set(rios.filter(r => allowedAssetIds.has(r.fsbdId) || allowedAssetIds.has(r.vehicleId)).map(r => r.id));
+        
+        fullPpaList = ppas.filter(ppa => ppa.relatedRioIds && ppa.relatedRioIds.some(id => allowedRioIds.has(id)));
+    } else {
+        fullPpaList = ppas;
+    }
+
+    // Initial render
+    renderPpaTable();
+
+    // Setup search listener
+    const searchInput = document.getElementById('ppa-search');
+    if (searchInput) {
+        searchInput.value = ''; // Clear on load
+        searchInput.addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value;
+            renderPpaTable();
+        });
+    }
+
+    // Setup sort listeners
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+            const column = th.dataset.sort;
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            renderPpaTable();
+        });
+    });
 }
 
 export async function initPpaForm(docId = null) {

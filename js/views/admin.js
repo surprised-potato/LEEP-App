@@ -21,8 +21,7 @@ export async function renderAdmin() {
                 // Fetch all data
                 const [lgus, fsbds, vehicles, made, mecr, mfcr, rios, ppas, users] = await Promise.all([
             window.getLguList(), window.getFsbdList(), window.getVehicleList(), window.getMadeList(),
-            window.db.collection('mecr_reports').get().then(s => s.docs.map(d => ({id:d.id, ...d.data()}))),
-            window.db.collection('mfcr_reports').get().then(s => s.docs.map(d => ({id:d.id, ...d.data()}))),
+            window.getMecrReports(), window.getTripTickets(),
             window.getRioList(), window.getPpaList(),
             window.getUserList()
                 ]);
@@ -43,6 +42,7 @@ export async function renderAdmin() {
                                     btnSample.disabled = true;
                                     btnSample.textContent = 'Deleting...';
                                     await window.deleteSampleData();
+                                    if(window.showToast) window.showToast('Sample Data Deleted successfully', 'success');
                                     await initLguSelector(); // Refresh selector
                                     await renderAdmin(); // Refresh view
                                 }
@@ -54,6 +54,7 @@ export async function renderAdmin() {
                                 btnSample.disabled = true;
                                 btnSample.textContent = 'Generating...';
                                 await window.createSampleData();
+                                if(window.showToast) window.showToast('Sample Data Generated Successfully');
                                 await initLguSelector(); // Refresh selector
                                 await renderAdmin(); // Refresh view
                             };
@@ -61,6 +62,128 @@ export async function renderAdmin() {
                         btnSample.classList.remove('hidden');
                     }
                 }
+
+                // --- STATE MANAGEMENT ---
+                let currentSearchQuery = '';
+                let currentPage = 1;
+                const ITEMS_PER_PAGE = 50;
+                let currentActiveTabId = 'content-lgus';
+
+                const searchInput = document.getElementById('admin-search-input');
+                const btnPrev = document.getElementById('btn-prev-page');
+                const btnNext = document.getElementById('btn-next-page');
+                const pageInfo = document.getElementById('pagination-info');
+                const pagContainer = document.getElementById('admin-pagination-container');
+                const itemCount = document.getElementById('admin-item-count');
+
+                // Create Maps for Parent Lookup
+                const lguMap = (lgus || []).reduce((acc, i) => ({...acc, [i.id]: i.name}), {});
+                const fsbdMap = (fsbds || []).reduce((acc, i) => ({...acc, [i.id]: i.name}), {});
+                const vehicleMap = (vehicles || []).reduce((acc, i) => ({...acc, [i.id]: i.plate_number}), {});
+
+                // Define tables centrally to allow dynamic re-rendering
+                const tableDefs = {
+                    'content-lgus': { tableId: 'table-lgus', moduleId: 'lgus', items: lgus, nameFn: i => i.name, parentFn: () => 'N/A', editHash: '#/lgus/edit', deleteFn: window.deleteLgu },
+                    'content-fsbds': { tableId: 'table-fsbds', moduleId: 'fsbds', items: fsbds, nameFn: i => i.name, parentFn: i => lguMap[i.lguId] || 'Unknown LGU', editHash: '#/fsbds/edit', deleteFn: window.deleteFsbd },
+                    'content-vehicles': { tableId: 'table-vehicles', moduleId: 'vehicles', items: vehicles, nameFn: i => i.plate_number, parentFn: i => lguMap[i.lguId] || 'Unknown LGU', editHash: '#/vehicles/edit', deleteFn: window.deleteVehicle },
+                    'content-made': { tableId: 'table-made', moduleId: 'made', items: made, nameFn: i => i.description_of_equipment, parentFn: i => fsbdMap[i.fsbdId] || 'Unknown Building', editHash: '#/made/edit', deleteFn: window.deleteMade },
+                    'content-mecr': { tableId: 'table-mecr', moduleId: 'consumption', items: mecr, nameFn: i => `${i.reporting_year}-${i.reporting_month}`, parentFn: i => fsbdMap[i.fsbdId] || 'Unknown', editHash: '#/consumption', deleteFn: window.deleteMecrReport },
+                    'content-trip-tickets': { tableId: 'table-trip-tickets', moduleId: 'consumption', items: mfcr, nameFn: i => `${i.date} - ${i.driver}`, parentFn: i => vehicleMap[i.vehicleId] || 'Unknown', editHash: '#/consumption', deleteFn: window.deleteTripTicket },
+                    'content-rios': { tableId: 'table-rios', moduleId: 'rios', items: rios, nameFn: i => i.proposed_action, parentFn: i => fsbdMap[i.fsbdId] || vehicleMap[i.vehicleId] || 'Unknown Asset', editHash: '#/rios/edit', deleteFn: window.deleteRio },
+                    'content-ppas': { tableId: 'table-ppas', moduleId: 'ppas', items: ppas, nameFn: i => i.project_name, parentFn: () => 'N/A', editHash: '#/ppas/edit', deleteFn: window.deletePpa },
+                    'content-users': { tableId: 'table-users', moduleId: 'users', items: users, nameFn: i => `${i.displayName || 'Unknown'} (${i.email})`, parentFn: i => lguMap[i.assignedLguId] || 'None / Pending', editHash: '#/users', deleteFn: () => false },
+                };
+
+                const renderActiveTable = () => {
+                    if (currentActiveTabId === 'content-defaults') {
+                        pagContainer.classList.add('hidden');
+                        if (searchInput) searchInput.parentElement.classList.add('hidden');
+                        itemCount.innerHTML = '';
+                        return;
+                    }
+                    if (searchInput) searchInput.parentElement.classList.remove('hidden');
+
+                    const def = tableDefs[currentActiveTabId];
+                    if (!def) return;
+
+                    const tbody = document.querySelector(`#${def.tableId} tbody`);
+                    if (!tbody) return;
+
+                    // Filter
+                    let filtered = def.items;
+                    if (currentSearchQuery) {
+                        const q = currentSearchQuery.toLowerCase();
+                        filtered = def.items.filter(item => {
+                            const n = (def.nameFn(item) || '').toLowerCase();
+                            const p = (def.parentFn(item) || '').toLowerCase();
+                            return n.includes(q) || p.includes(q);
+                        });
+                    }
+
+                    // Paginate
+                    const totalItems = filtered.length;
+                    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+                    if (currentPage > totalPages) currentPage = totalPages;
+
+                    const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+                    const endIdx = startIdx + ITEMS_PER_PAGE;
+                    const paginated = filtered.slice(startIdx, endIdx);
+
+                    // Update UI Counters
+                    if (itemCount) {
+                        itemCount.textContent = `Showing ${totalItems > 0 ? startIdx + 1 : 0} - ${Math.min(endIdx, totalItems)} of ${totalItems}`;
+                    }
+                    
+                    if (totalItems > ITEMS_PER_PAGE) {
+                        pagContainer.classList.remove('hidden');
+                        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+                        btnPrev.disabled = currentPage === 1;
+                        btnNext.disabled = currentPage === totalPages;
+                    } else {
+                        pagContainer.classList.add('hidden');
+                    }
+
+                    // Render
+                    if (paginated.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500 italic">No items found</td></tr>';
+                        return;
+                    }
+                    
+                    const canWrite = checkPermission(def.moduleId, 'write');
+
+                    tbody.innerHTML = paginated.map(item => `
+                        <tr>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${def.nameFn(item)}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${def.parentFn(item)}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                ${canWrite ? `
+                                    <a href="${def.editHash === '#/consumption' ? def.editHash : def.editHash + '/' + item.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs mr-1">Edit</a>
+                                    ${def.tableId !== 'table-users' ? `<button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs btn-delete" data-id="${item.id}">Delete</button>` : ''}
+                                ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    // Attach delete listeners
+                    if (canWrite && def.tableId !== 'table-users') {
+                        tbody.querySelectorAll('.btn-delete').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                if(confirm('Are you sure you want to delete this item?')) {
+                                    const id = e.target.getAttribute('data-id');
+                                    const success = await def.deleteFn(id);
+                                    if(success) {
+                                        if (window.showToast) window.showToast('Item deleted successfully.');
+                                        // Remove from local array so it doesn't reappear on search/pagination
+                                        def.items = def.items.filter(i => i.id !== id);
+                                        renderActiveTable(); // re-render
+                                    } else {
+                                        if (window.showToast) window.showToast('Error deleting item.', 'error');
+                                    }
+                                }
+                            });
+                        });
+                    }
+                };
 
                 // --- TAB LOGIC ---
                 const tabs = document.querySelectorAll('.tab-btn');
@@ -72,104 +195,54 @@ export async function renderAdmin() {
                         tab.classList.replace('border-transparent', 'border-blue-500');
                         tab.classList.replace('text-gray-500', 'text-blue-600');
                         contents.forEach(c => c.classList.add('hidden'));
-                        document.getElementById(tab.dataset.target).classList.remove('hidden');
+                        
+                        currentActiveTabId = tab.dataset.target;
+                        document.getElementById(currentActiveTabId).classList.remove('hidden');
+                        
+                        // Reset search and pagination when switching tabs
+                        if (searchInput) searchInput.value = '';
+                        currentSearchQuery = '';
+                        currentPage = 1;
+
+                        renderActiveTable();
                     });
                 });
 
-                // Create Maps for Parent Lookup
-                const lguMap = lgus.reduce((acc, i) => ({...acc, [i.id]: i.name}), {});
-                const fsbdMap = fsbds.reduce((acc, i) => ({...acc, [i.id]: i.name}), {});
-                const vehicleMap = vehicles.reduce((acc, i) => ({...acc, [i.id]: i.plate_number}), {});
+                // Attach Event Listeners to Search and Pagination
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        currentSearchQuery = e.target.value;
+                        currentPage = 1;
+                        renderActiveTable();
+                    });
+                }
 
-                // Helper to render table rows
-                const renderRows = (tableId, moduleId, items, nameFn, parentFn, editHash, deleteFn) => {
-                    const tbody = document.querySelector(`#${tableId} tbody`);
-                    if (!tbody) return;
-                    if (items.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No items found</td></tr>';
-                        return;
-                    }
-                    
-                    const canWrite = checkPermission(moduleId, 'write');
+                if (btnPrev) {
+                    btnPrev.addEventListener('click', () => {
+                        if (currentPage > 1) {
+                            currentPage--;
+                            renderActiveTable();
+                        }
+                    });
+                }
 
-                    tbody.innerHTML = items.map(item => `
-                        <tr>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${nameFn(item)}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${parentFn(item)}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                ${canWrite ? `
-                                    <a href="${editHash}/${item.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs mr-1">Edit</a>
-                                    <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs btn-delete" data-id="${item.id}">Delete</button>
-                                ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
-                            </td>
-                        </tr>
-                    `).join('');
+                if (btnNext) {
+                    btnNext.addEventListener('click', () => {
+                        currentPage++;
+                        renderActiveTable();
+                    });
+                }
 
-                    // Attach delete listeners
-                    if (canWrite) {
-                        tbody.querySelectorAll('.btn-delete').forEach(btn => {
-                            btn.addEventListener('click', async (e) => {
-                                if(confirm('Are you sure you want to delete this item?')) {
-                                    const id = e.target.getAttribute('data-id');
-                                    const success = await deleteFn(id);
-                                    if(success) {
-                                        e.target.closest('tr').remove();
-                                    } else {
-                                        alert('Error deleting item.');
-                                    }
-                                }
-                            });
-                        });
-                    }
-                };
-
-                // Render LGUs
-        renderRows('table-lgus', 'lgus', lgus, i => i.name, () => 'N/A', '#/lgus/edit', window.deleteLgu);
-
-                // Render Buildings
-        renderRows('table-fsbds', 'fsbds', fsbds, i => i.name, i => lguMap[i.lguId] || 'Unknown LGU', '#/fsbds/edit', window.deleteFsbd);
-
-                // Render Vehicles
-        renderRows('table-vehicles', 'vehicles', vehicles, i => i.plate_number, i => lguMap[i.lguId] || 'Unknown LGU', '#/vehicles/edit', window.deleteVehicle);
-
-                // Render MADE
-        renderRows('table-made', 'made', made, i => i.description_of_equipment, i => fsbdMap[i.fsbdId] || 'Unknown Building', '#/made/edit', window.deleteMade);
-
-                // Render MECR (No edit page for reports in current structure, usually handled in consumption page, but we can't link easily without a specific edit route. 
-                // For now, we will disable Edit or link to consumption page. The prompt asked for edit/delete. 
-                // Since we don't have specific edit forms for reports (they are inline in consumption), I will omit the edit link for reports or point to consumption.)
-                // Actually, let's just allow Delete for reports to keep it simple as per "edit and delete" request usually implies existence of edit forms.
-                // I'll leave Edit button but it might not work perfectly if route doesn't exist. 
-                // *Correction*: The user didn't ask to create edit forms for reports, just "actions to edit or delete". 
-                // I will hide Edit for reports since no route exists in app.js for /mecr/edit.
-                const renderRowsNoEdit = (tableId, moduleId, items, nameFn, parentFn, deleteFn) => {
-                     const tbody = document.querySelector(`#${tableId} tbody`);
-                     if (!tbody) return;
-                     
-                     const canWrite = checkPermission(moduleId, 'write');
-
-                     tbody.innerHTML = items.map(item => `
-                        <tr>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${nameFn(item)}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${parentFn(item)}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                ${canWrite ? `<button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs btn-delete" data-id="${item.id}">Delete</button>` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
-                            </td>
-                        </tr>
-                    `).join('');
-                    if (canWrite) {
-                        tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', async (e) => { if(confirm('Delete?')) { await deleteFn(e.target.getAttribute('data-id')); e.target.closest('tr').remove(); } }));
-                    }
-                };
-
-        renderRowsNoEdit('table-mecr', mecr, i => `${i.reporting_year}-${i.reporting_month}`, i => fsbdMap[i.fsbdId] || 'Unknown', window.deleteMecrReport);
-        renderRowsNoEdit('table-mfcr', mfcr, i => `${i.reporting_year}-${i.reporting_month}`, i => vehicleMap[i.vehicleId] || 'Unknown', window.deleteMfcrReport);
-
-        renderRows('table-rios', rios, i => i.proposed_action, i => fsbdMap[i.fsbdId] || vehicleMap[i.vehicleId] || 'Unknown Asset', '#/rios/edit', window.deleteRio);
-        renderRows('table-ppas', ppas, i => i.project_name, () => 'N/A', '#/ppas/edit', window.deletePpa);
-
-        // Render Users
-        renderRows('table-users', users, i => `${i.displayName || 'Unknown'} (${i.email})`, i => lguMap[i.assignedLguId] || 'None / Pending', '#/users', () => false);
+                // Initial Render Base view
+                const initialTabsElements = ['content-lgus','content-fsbds','content-vehicles','content-made','content-mecr','content-trip-tickets','content-rios','content-ppas','content-users'];
+                for (const t of initialTabsElements) {
+                    // pre-render all tables hidden so they don't stutter, but keep 'content-lgus' active
+                    const tempTab = currentActiveTabId;
+                    currentActiveTabId = t;
+                    renderActiveTable();
+                    currentActiveTabId = tempTab;
+                }
+                renderActiveTable(); // force active rendering
 
         // --- DEFAULT PERMISSIONS LOGIC ---
         const defaultContainer = document.getElementById('admin-default-modules');

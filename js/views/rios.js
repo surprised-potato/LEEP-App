@@ -1,59 +1,178 @@
 import { getCurrentLguId, checkPermission } from './state.js';
 import { openAssetDetailsModal } from './ui.js';
 
-export async function renderRioList() {
-                const tableBody = document.getElementById('rio-table-body');
-                if (!tableBody) return;
+// --- Module-level state for search, sort, and data ---
+let fullRioList = [];
+let currentSort = { column: 'proposed_action', direction: 'asc' };
+let currentSearchTerm = '';
+let assetMap = {}; // Cache the asset map for sorting
 
-        let [rios, buildings, vehicles] = await Promise.all([window.getRioList(), window.getFsbdList(), window.getVehicleList()]);
+/**
+ * Filters and sorts the full list based on current state.
+ */
+function getProcessedList() {
+    let processedList = fullRioList;
 
-        const canWrite = checkPermission('rios', 'write');
-        const addBtn = document.getElementById('btn-add-rio');
-        if (addBtn) {
-            addBtn.classList.toggle('hidden', !canWrite);
+    // 1. Filter by search term
+    if (currentSearchTerm) {
+        const lowercasedTerm = currentSearchTerm.toLowerCase();
+        processedList = fullRioList.filter(rio => {
+            const assetName = assetMap[rio.fsbdId || rio.vehicleId] || 'N/A';
+            return (rio.proposed_action || '').toLowerCase().includes(lowercasedTerm) ||
+                   (rio.priority || '').toLowerCase().includes(lowercasedTerm) ||
+                   (rio.status || '').toLowerCase().includes(lowercasedTerm) ||
+                   (assetName).toLowerCase().includes(lowercasedTerm);
+        });
+    }
+
+    // 2. Sort the list
+    processedList.sort((a, b) => {
+        const col = currentSort.column;
+        let valA, valB;
+
+        // Custom handling for derived columns
+        if (col === 'roi_years') {
+            const getRoi = (rio) => {
+                const c = Number(rio.estimated_cost_php) || 0;
+                const s = Number(rio.estimated_savings_php) || 0;
+                return s > 0 ? (c / (s * 12)) : Infinity; // Sort Infinity to the bottom usually
+            };
+            valA = getRoi(a);
+            valB = getRoi(b);
+        } else {
+            valA = a[col];
+            valB = b[col];
         }
-                
-                // Filter Assets by LGU
-        const currentLguId = getCurrentLguId();
-                if (currentLguId) {
-                    buildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
-                    vehicles = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
-                }
 
-                const allowedBuildingIds = new Set(buildings.map(b => b.id));
-                const allowedVehicleIds = new Set(vehicles.map(v => v.id));
+        if (valA == null) return 1;
+        if (valB == null) return -1;
 
-                // Filter RIOs that belong to visible assets
-                rios = rios.filter(r => allowedBuildingIds.has(r.fsbdId) || allowedVehicleIds.has(r.vehicleId));
-                
-                const assetMap = {};
-                buildings.forEach(b => assetMap[b.id] = `Building: ${b.name}`);
-                vehicles.forEach(v => assetMap[v.id] = `Vehicle: ${v.plate_number}`);
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            return currentSort.direction === 'asc' ? valA - valB : valB - valA;
+        }
 
-                if (rios.length > 0) {
-                    tableBody.innerHTML = rios.map(rio => {
-                        const cost = Number(rio.estimated_cost_php) || 0;
-                        const savings = Number(rio.estimated_savings_php) || 0;
-                        const roi = savings > 0 ? (cost / (savings * 12)).toFixed(2) : '-';
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
 
-                        return `
-                            <tr>
-                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.proposed_action}</td>
-                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${assetMap[rio.fsbdId || rio.vehicleId] || 'N/A'}</td>
-                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.priority}</td>
-                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.status}</td>
-                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm font-mono">${roi}</td>
-                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                    ${canWrite ? `
-                                        <a href="#/rios/edit/${rio.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
-                                    ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
-                } else {
-                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No recommendations found.</td></tr>';
-                }
+        if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    return processedList;
+}
+
+/**
+ * Renders the Recommendations table based on the current state.
+ */
+function renderRioTable() {
+    const tableBody = document.getElementById('rio-table-body');
+    if (!tableBody) return;
+
+    const processedList = getProcessedList();
+    const canWrite = checkPermission('rios', 'write');
+
+    if (processedList.length > 0) {
+        tableBody.innerHTML = processedList.map(rio => {
+            const cost = Number(rio.estimated_cost_php) || 0;
+            const savings = Number(rio.estimated_savings_php) || 0;
+            const roi = savings > 0 ? (cost / (savings * 12)).toFixed(2) : '-';
+
+            return `
+                <tr>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.proposed_action}</td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${assetMap[rio.fsbdId || rio.vehicleId] || 'N/A'}</td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.priority}</td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${rio.status}</td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm font-mono">${roi}</td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        ${canWrite ? `
+                            <a href="#/rios/edit/${rio.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                        ` : '<span class="text-gray-400 italic text-xs">Read Only</span>'}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } else {
+        tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4">${currentSearchTerm ? 'No recommendations match your search.' : 'No recommendations found.'}</td></tr>`;
+    }
+
+    // Update sort indicators
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+        const indicator = th.querySelector('.sort-indicator');
+        if (indicator) {
+            if (th.dataset.sort === currentSort.column) {
+                indicator.textContent = currentSort.direction === 'asc' ? '▲' : '▼';
+            } else {
+                indicator.textContent = '';
+            }
+        }
+    });
+}
+
+export async function renderRioList() {
+    const tableBody = document.getElementById('rio-table-body');
+    if (!tableBody) return;
+
+    // Reset state for this view
+    currentSearchTerm = '';
+    currentSort = { column: 'proposed_action', direction: 'asc' };
+    
+    // Initial loading state
+    tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Loading...</td></tr>';
+
+    let [rios, buildings, vehicles] = await Promise.all([window.getRioList(), window.getFsbdList(), window.getVehicleList()]);
+
+    const canWrite = checkPermission('rios', 'write');
+    const addBtn = document.getElementById('btn-add-rio');
+    if (addBtn) {
+        addBtn.classList.toggle('hidden', !canWrite);
+    }
+            
+    // Filter Assets by LGU
+    const currentLguId = getCurrentLguId();
+    if (currentLguId) {
+        buildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
+        vehicles = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
+    }
+
+    const allowedBuildingIds = new Set(buildings.map(b => b.id));
+    const allowedVehicleIds = new Set(vehicles.map(v => v.id));
+
+    // Filter RIOs that belong to visible assets
+    fullRioList = rios.filter(r => allowedBuildingIds.has(r.fsbdId) || allowedVehicleIds.has(r.vehicleId));
+    
+    // Build the asset map globally for the render function to use
+    assetMap = {};
+    buildings.forEach(b => assetMap[b.id] = `Building: ${b.name}`);
+    vehicles.forEach(v => assetMap[v.id] = `Vehicle: ${v.plate_number}`);
+
+    // Initial render
+    renderRioTable();
+
+    // Setup search listener
+    const searchInput = document.getElementById('rio-search');
+    if (searchInput) {
+        searchInput.value = ''; // Clear on load
+        searchInput.addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value;
+            renderRioTable();
+        });
+    }
+
+    // Setup sort listeners
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+            const column = th.dataset.sort;
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            renderRioTable();
+        });
+    });
 }
 
 export async function initRioForm(docId = null) {
@@ -288,12 +407,12 @@ export async function renderRioContext(container, assetId = null, assetType = nu
     try {
         if (!window.db) return;
 
-        const [buildings, vehicles, madeList, mecrSnap, mfcrSnap, seuList] = await Promise.all([
+        const [buildings, vehicles, madeList, mecrSnap, tripsSnap, seuList] = await Promise.all([
             window.getFsbdList(),
             window.getVehicleList(),
             window.getMadeList(),
             window.db.collection('mecr_reports').get(),
-            window.db.collection('mfcr_reports').get(),
+            window.db.collection('trip_tickets').get(),
             window.getSeuList()
         ]);
 
@@ -313,7 +432,29 @@ export async function renderRioContext(container, assetId = null, assetType = nu
         const filteredMade = madeList.filter(m => bldgIds.has(m.fsbdId));
         
         const mecr = mecrSnap.docs.map(d => d.data()).filter(r => bldgIds.has(r.fsbdId));
-        const mfcr = mfcrSnap.docs.map(d => d.data()).filter(r => vehIds.has(r.vehicleId));
+        const allTrips = tripsSnap.docs.map(d => d.data()).filter(t => vehIds.has(t.vehicleId));
+
+        // Group trips by vehicle and month to simulate the old monthly report structure for trend calculations
+        const tripsByVehicleAndMonth = {};
+        allTrips.forEach(trip => {
+            if (!trip.date) return;
+            const date = new Date(trip.date);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1; // 1-12
+            const periodKey = `${year}-${month.toString().padStart(2, '0')}`;
+            
+            if (!tripsByVehicleAndMonth[trip.vehicleId]) {
+                tripsByVehicleAndMonth[trip.vehicleId] = {};
+            }
+            if (!tripsByVehicleAndMonth[trip.vehicleId][periodKey]) {
+                tripsByVehicleAndMonth[trip.vehicleId][periodKey] = {
+                    reporting_year: year,
+                    reporting_month: month,
+                    fuel_consumed_liters: 0
+                };
+            }
+            tripsByVehicleAndMonth[trip.vehicleId][periodKey].fuel_consumed_liters += (Number(trip.fuel_consumed) || 0);
+        });
 
         // Helper to calculate stats
         const calcStats = (reports, key) => {
@@ -353,7 +494,8 @@ export async function renderRioContext(container, assetId = null, assetType = nu
         }).sort((a, b) => b.avg - a.avg).slice(0, 3);
 
         const vehStats = filteredVehicles.map(v => {
-            const stats = calcStats(mfcr.filter(r => r.vehicleId === v.id), 'fuel_consumed_liters');
+            const vehicleMonthlyReports = Object.values(tripsByVehicleAndMonth[v.id] || {});
+            const stats = calcStats(vehicleMonthlyReports, 'fuel_consumed_liters');
             return { id: v.id, plate: v.plate_number, ...stats };
         }).sort((a, b) => b.avg - a.avg).slice(0, 3);
 
@@ -459,8 +601,14 @@ export async function renderRioContext(container, assetId = null, assetType = nu
                     openAssetDetailsModal(asset.name, reports, 'electricity_consumption_kwh', 'kWh', assetMade);
                 } else {
                     const asset = filteredVehicles.find(v => v.id === id);
-                    const reports = mfcr.filter(r => r.vehicleId === id);
-                    openAssetDetailsModal(asset.plate_number, reports, 'fuel_consumed_liters', 'L');
+                    // Generate a "virtual" report from the grouped trip tickets so the modal chart renders correctly
+                    const virtualMonthlyReports = Object.entries(tripsByVehicleAndMonth[id] || {}).map(([key, data]) => ({
+                        reporting_month: data.reporting_month,
+                        reporting_year: data.reporting_year,
+                        period_covered: key,
+                        fuel_consumed_liters: data.fuel_consumed_liters
+                    }));
+                    openAssetDetailsModal(asset.plate_number, virtualMonthlyReports, 'fuel_consumed_liters', 'L');
                 }
             });
         });

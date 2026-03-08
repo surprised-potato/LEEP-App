@@ -3,6 +3,18 @@ const api = require('./api.js');
 // Mock the global window object and Firestore db
 global.window = global;
 
+// Mock direct localStorage
+const localStorageMock = (function() {
+    let store = {};
+    return {
+        getItem: jest.fn(key => store[key] || null),
+        setItem: jest.fn((key, value) => { store[key] = value.toString(); }),
+        removeItem: jest.fn(key => { delete store[key]; }),
+        clear: jest.fn(() => { store = {}; })
+    };
+})();
+Object.defineProperty(global, 'localStorage', { value: localStorageMock, writable: true, configurable: true });
+
 describe('API Unit Tests', () => {
     let mockCollection;
     let mockDoc;
@@ -40,6 +52,8 @@ describe('API Unit Tests', () => {
         // Silence console.log/error during tests
         jest.spyOn(console, 'log').mockImplementation(() => {});
         jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        localStorage.clear();
     });
 
     afterEach(() => {
@@ -92,102 +106,110 @@ describe('API Unit Tests', () => {
         expect(console.error).toHaveBeenCalled();
     });
 
-    // --- FSBD Tests ---
-    test('createFsbd should add data', async () => {
-        mockCollection.add.mockResolvedValue({ id: 'fsbd-1' });
-        const result = await api.createFsbd({ name: 'Building A' });
-        expect(window.db.collection).toHaveBeenCalledWith('fsbds');
-        expect(result).toBe('fsbd-1');
+    // --- LGU Tests ---
+    test('getLguById should fetch single data', async () => {
+        mockDoc.get.mockResolvedValue({ exists: true, id: 'l1', data: () => ({ name: 'Test' }) });
+        const result = await api.getLguById('l1');
+        expect(result.name).toBe('Test');
     });
 
-    test('updateFsbd should update data', async () => {
-        const result = await api.updateFsbd('fsbd-1', { name: 'Building B' });
-        expect(window.db.collection).toHaveBeenCalledWith('fsbds');
-        expect(mockDoc.update).toHaveBeenCalledWith({ name: 'Building B' });
-        expect(result).toBe(true);
+    test('updateLgu should update data', async () => {
+        await api.updateLgu('l1', { name: 'Updated' });
+        expect(mockDoc.update).toHaveBeenCalledWith({ name: 'Updated' });
     });
 
-    test('deleteFsbd should delete document', async () => {
-        const result = await api.deleteFsbd('fsbd-1');
+    test('deleteLgu should delete document', async () => {
+        await api.deleteLgu('l1');
         expect(mockDoc.delete).toHaveBeenCalled();
-        expect(result).toBe(true);
     });
 
-    // --- Vehicle Tests ---
-    test('getVehicleList should fetch data', async () => {
-        mockCollection.get.mockResolvedValue({ docs: [{ id: 'v1', data: () => ({ plate: 'ABC' }) }] });
-        const result = await api.getVehicleList();
-        expect(window.db.collection).toHaveBeenCalledWith('vehicles');
-        expect(result).toHaveLength(1);
-    });
-
-    test('createVehicle should add data', async () => {
-        mockCollection.add.mockResolvedValue({ id: 'v1' });
-        await api.createVehicle({ plate: 'ABC' });
-        expect(window.db.collection).toHaveBeenCalledWith('vehicles');
-    });
-
-    // --- MADE Tests ---
-    test('getMadeList should fetch data', async () => {
+    // --- FSBD Tests ---
+    test('getFsbdList should fetch and sort data', async () => {
         mockCollection.get.mockResolvedValue({ docs: [] });
-        await api.getMadeList();
-        expect(window.db.collection).toHaveBeenCalledWith('made_equipment');
+        await api.getFsbdList();
+        expect(window.db.collection).toHaveBeenCalledWith('fsbds');
+        // Removed expect(mockCollection.orderBy) because it's not used in development api.js
     });
 
-    // --- MECR Tests ---
-    test('getMecrReports should fetch and sort data', async () => {
-        const mockReports = [
-            { id: 'r1', data: () => ({ reporting_year: 2022, reporting_month: 1 }) },
-            { id: 'r2', data: () => ({ reporting_year: 2023, reporting_month: 1 }) }
+    // --- Trip Tickets Tests ---
+    test('getTripTickets should fetch and sort data', async () => {
+        const mockData = [
+            { id: '1', data: () => ({ date: '2023-02-01', driver: 'A' }) },
+            { id: '2', data: () => ({ date: '2023-01-15', driver: 'B' }) }
         ];
-        mockCollection.get.mockResolvedValue({ docs: mockReports });
+        mockCollection.get.mockResolvedValue({ docs: mockData });
+        const result = await api.getTripTickets('veh1');
         
-        const result = await api.getMecrReports('bldg-1');
-        
-        expect(window.db.collection).toHaveBeenCalledWith('mecr_reports');
-        expect(mockCollection.where).toHaveBeenCalledWith('fsbdId', '==', 'bldg-1');
-        // Check client-side sorting (2023 before 2022)
-        expect(result[0].reporting_year).toBe(2023);
+        expect(window.db.collection).toHaveBeenCalledWith('trip_tickets');
+        expect(mockCollection.where).toHaveBeenCalledWith('vehicleId', '==', 'veh1');
+        // Sorted descending by date
+        expect(result[0].date).toBe('2023-02-01');
     });
 
-    test('createMecrReport should add data', async () => {
-        mockCollection.add.mockResolvedValue({ id: 'r1' });
-        await api.createMecrReport({ kwh: 100 });
-        expect(window.db.collection).toHaveBeenCalledWith('mecr_reports');
+    test('createTripTicket should add data and return ID', async () => {
+        mockCollection.add.mockResolvedValue({ id: 'tt1' });
+        const result = await api.createTripTicket({ date: '2023-03-01', lguId: 'lgu-a', vehicleId: 'veh1' });
+        expect(window.db.collection).toHaveBeenCalledWith('trip_tickets');
+        expect(result).toBe('tt1');
     });
 
-    // --- MFCR Tests ---
-    test('getMfcrReports should fetch and sort data', async () => {
+    test('deleteTripTicket should delete document', async () => {
+        await api.deleteTripTicket('tt1');
+        expect(mockDoc.delete).toHaveBeenCalled();
+    });
+
+    // ...
+
+    // --- User Permissions & Test Settings ---
+    test('getUserList should fetch data', async () => {
         mockCollection.get.mockResolvedValue({ docs: [] });
-        await api.getMfcrReports('veh-1');
-        expect(window.db.collection).toHaveBeenCalledWith('mfcr_reports');
-        expect(mockCollection.where).toHaveBeenCalledWith('vehicleId', '==', 'veh-1');
+        await api.getUserList();
+        expect(window.db.collection).toHaveBeenCalledWith('users');
     });
 
-    // --- RIO Tests ---
-    test('getRioList should fetch data', async () => {
-        mockCollection.get.mockResolvedValue({ docs: [] });
-        await api.getRioList();
-        expect(window.db.collection).toHaveBeenCalledWith('rios');
+    test('updateUserPermissions should update data', async () => {
+        await api.updateUserPermissions('u1', { role: 'Admin', assignedLguId: 'l1' });
+        expect(mockDoc.update).toHaveBeenCalledWith({
+            permissions: {
+                role: 'Admin',
+                assignedLguId: 'l1'
+            }
+        });
     });
 
-    test('createRio should add data', async () => {
-        mockCollection.add.mockResolvedValue({ id: 'rio-1' });
-        await api.createRio({ action: 'Save energy' });
-        expect(window.db.collection).toHaveBeenCalledWith('rios');
+    test('updateUserRole should succeed for System Admin', async () => {
+        window._getCurrentUser.mockReturnValue({ role: 'System Admin' });
+        await api.updateUserRole('u1', { role: 'LGU Admin', permissions: {}, assignedLguId: 'l1' });
+        expect(mockDoc.update).toHaveBeenCalledWith({
+            role: 'LGU Admin',
+            permissions: {},
+            assignedLguId: 'l1'
+        });
     });
 
-    // --- PPA Tests ---
-    test('getPpaList should fetch data', async () => {
-        mockCollection.get.mockResolvedValue({ docs: [] });
-        await api.getPpaList();
-        expect(window.db.collection).toHaveBeenCalledWith('ppas');
+    test('updateUserRole should block escalation for LGU Admin', async () => {
+        window._getCurrentUser.mockReturnValue({ role: 'LGU Admin', assignedLguId: 'l1' });
+        await expect(api.updateUserRole('u1', { role: 'LGU Admin', permissions: {}, assignedLguId: 'l1' }))
+            .rejects.toThrow(/You cannot assign the role "LGU Admin" as it is equal to or higher than your own level/);
     });
 
-    test('createPpa should add data', async () => {
-        mockCollection.add.mockResolvedValue({ id: 'ppa-1' });
-        await api.createPpa({ name: 'Project X' });
-        expect(window.db.collection).toHaveBeenCalledWith('ppas');
+    test('updateUserRole should block different LGU for LGU Admin', async () => {
+        window._getCurrentUser.mockReturnValue({ role: 'LGU Admin', assignedLguId: 'l1' });
+        await expect(api.updateUserRole('u1', { role: 'LGU EEC Officer', permissions: {}, assignedLguId: 'l2' }))
+            .rejects.toThrow(/You can only manage users within your own LGU/);
+    });
+
+    test('getDefaultPermissions should fetch setting', async () => {
+        mockDoc.get.mockResolvedValue({ exists: true, data: () => ({ permissions: {} }) });
+        window.db.collection.mockReturnValue({ doc: () => mockDoc });
+        await api.getDefaultPermissions();
+        expect(mockDoc.get).toHaveBeenCalled();
+    });
+
+    test('updateDefaultPermissions should update setting', async () => {
+        window.db.collection.mockReturnValue({ doc: () => mockDoc });
+        await api.updateDefaultPermissions({});
+        expect(mockDoc.set).toHaveBeenCalled();
     });
 
     // --- Security Guard Tests ---

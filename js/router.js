@@ -113,12 +113,21 @@ export async function handleRouting() {
         // --- END ROUTE GUARD ---
 
         // The original app.js passed the ID as an argument to the controller.
-        // We replicate that behavior here for the 'edit' routes.
-        const controller = route.params?.id 
-            ? () => route.controller(route.params.id) 
-            : route.controller;
+        // Wrap the controller to handle parameters and the loadId correctly.
+        // - For edit routes (:id), we pass the ID as the first argument.
+        // - For "new" routes, we pass null as the first argument so it defaults correctly.
+        // - For all routes, we can pass loadId as an additional argument if they need it.
+        const wrappedController = route.controller ? async (loadId) => {
+            if (route.params?.id) {
+                return await route.controller(route.params.id, loadId);
+            } else if (path.endsWith('/new')) {
+                return await route.controller(null, loadId);
+            } else {
+                return await route.controller(loadId);
+            }
+        } : null;
             
-        await loadContent(route.view, controller);
+        await loadContent(route.view, wrappedController);
     } else {
         console.error("No route found for path:", path);
         const appContent = document.getElementById('app-content');

@@ -1,6 +1,18 @@
 <div class="bg-white rounded-lg shadow-lg p-6">
-    <div class="flex justify-between items-center mb-6 no-print">
-        <h2 class="text-2xl font-bold text-gray-800">Compliance Report Preview</h2>
+    <div class="flex flex-col md:flex-row justify-between items-end mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200 no-print gap-4">
+        <div class="flex items-center gap-4 flex-wrap">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Start Date</label>
+                <input type="date" id="report-start-date" class="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none flex-grow">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">End Date</label>
+                <input type="date" id="report-end-date" class="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none flex-grow">
+            </div>
+            <button id="btn-generate-report" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow mt-6">
+                Filter Report
+            </button>
+        </div>
         <button id="btn-print-report" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
             Print / Save as PDF

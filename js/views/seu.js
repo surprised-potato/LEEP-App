@@ -18,13 +18,14 @@ export async function renderSeuPage() {
                 }
 
                 try {
-                    const [lguSeus, buildings, vehicles, madeList, mfcrSnap, mecrSnap] = await Promise.all([
+                    const [lguSeus, buildings, vehicles, madeList, mfcrSnap, mecrSnap, ttSnap] = await Promise.all([
                 window.getSeuList(),
                 window.getFsbdList(),
                 window.getVehicleList(),
                 window.getMadeList(),
                         window.db.collection('mfcr_reports').get(),
-                        window.db.collection('mecr_reports').get()
+                        window.db.collection('mecr_reports').get(),
+                        window.db.collection('trip_tickets').get()
                     ]);
 
                     // Filter by LGU
@@ -71,6 +72,18 @@ export async function renderSeuPage() {
                     // --- Top Consumers Chart ---
                     const mecr = mecrSnap.docs.map(d => d.data()).filter(r => bldgIds.has(r.fsbdId));
                     const mfcr = mfcrSnap.docs.map(d => d.data()).filter(r => vehIds.has(r.vehicleId));
+                    const tts = ttSnap.docs.map(d => d.data()).filter(r => vehIds.has(r.vehicleId));
+
+                    // Normalize fuel reports (merge legacy monthly with new trip tickets)
+                    const fuelReports = [
+                        ...mfcr,
+                        ...tts.map(t => ({
+                            vehicleId: t.vehicleId,
+                            fuel_consumed_liters: Number(t.fuelLiters) || 0,
+                            cost_php: Number(t.fuelCost) || 0,
+                            type: 'TripTicket'
+                        }))
+                    ];
 
                     const assetCosts = [];
                     lguBuildings.forEach(b => {
@@ -78,7 +91,7 @@ export async function renderSeuPage() {
                         if(cost > 0) assetCosts.push({ name: b.name, cost, type: 'Building' });
                     });
                     lguVehicles.forEach(v => {
-                        const cost = mfcr.filter(r => r.vehicleId === v.id).reduce((sum, r) => sum + (Number(r.cost_php) || 0), 0);
+                        const cost = fuelReports.filter(r => r.vehicleId === v.id).reduce((sum, r) => sum + (Number(r.cost_php) || 0), 0);
                         if(cost > 0) assetCosts.push({ name: v.plate_number, cost, type: 'Vehicle' });
                     });
 
@@ -126,13 +139,14 @@ export async function renderSeuPage() {
                         `;
                     }).join('') || '<tr><td colspan="3" class="text-center py-2 text-gray-500">No equipment data found.</td></tr>';
 
-                    // --- Vehicle Analysis (Historical) ---
+                    // --- Vehicle Analysis (Historical & Active) ---
                     const vehicleStats = lguVehicles.map(v => {
-                        const reports = mfcr.filter(r => r.vehicleId === v.id);
+                        const reports = fuelReports.filter(r => r.vehicleId === v.id);
                         const totalFuel = reports.reduce((sum, r) => sum + (Number(r.fuel_consumed_liters) || 0), 0);
-                        const avgFuel = reports.length ? totalFuel / reports.length : 0;
-                        return { ...v, avgFuel };
-                    }).filter(v => v.avgFuel > 0).sort((a, b) => b.avgFuel - a.avgFuel).slice(0, 10);
+                        // For trip tickets, we treat them as individual data points. 
+                        // To keep it comparable to "Average Monthly Fuel", we just show the total for now.
+                        return { ...v, totalFuel };
+                    }).filter(v => v.totalFuel > 0).sort((a, b) => b.totalFuel - a.totalFuel).slice(0, 10);
 
                     vehicleTableBody.innerHTML = vehicleStats.map(v => `
                         <tr>
@@ -140,7 +154,7 @@ export async function renderSeuPage() {
                                 <div class="font-bold text-gray-800">${v.plate_number}</div>
                                 <div class="text-xs text-gray-500">${v.make} ${v.model}</div>
                             </td>
-                            <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-right font-mono">${v.avgFuel.toLocaleString(undefined, {maximumFractionDigits: 1})} L</td>
+                            <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-right font-mono">${v.totalFuel.toLocaleString(undefined, {maximumFractionDigits: 1})} L</td>
                             ${canWrite ? `
                                 <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm text-center">
                                     <button class="bg-teal-100 text-teal-700 hover:bg-teal-200 px-2 py-1 rounded text-xs font-bold btn-add-seu-vehicle" data-id="${v.id}">Identify</button>

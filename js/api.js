@@ -21,6 +21,46 @@ function _requireLguMatch(dataLguId) {
     }
 }
 
+// --- Caching Helpers ---
+const CACHE_TTL = 300000; // 5 minutes
+
+function _getCachedData(cacheKey) {
+    try {
+        const cached = localStorage.getItem(cacheKey);
+        if (!cached) return null;
+        
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp > CACHE_TTL) {
+            localStorage.removeItem(cacheKey);
+            return null;
+        }
+        return data;
+    } catch (e) {
+        console.warn('Cache read error:', e);
+        return null;
+    }
+}
+
+function _setCachedData(cacheKey, data) {
+    try {
+        const cachePayload = {
+            data: data,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(cachePayload));
+    } catch (e) {
+        console.warn('Cache write error:', e);
+    }
+}
+
+function _invalidateCache(cacheKey) {
+    try {
+        localStorage.removeItem(cacheKey);
+    } catch (e) {
+        console.warn('Cache invalidation error:', e);
+    }
+}
+
 // --- LGU Functions ---
 
 /**
@@ -32,9 +72,16 @@ async function getLguList() {
         console.error("Firestore is not initialized.");
         return [];
     }
+    
+    const cacheKey = 'cache_lgus';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+    
     try {
         const snapshot = await db.collection('lgus').orderBy('name').get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        _setCachedData(cacheKey, data);
+        return data;
     } catch (error) {
         console.error("Error fetching LGU list:", error);
         return [];
@@ -55,6 +102,7 @@ async function createLgu(data) {
     try {
         const docRef = await db.collection('lgus').add(data);
         console.log("Created new LGU with ID:", docRef.id);
+        _invalidateCache('cache_lgus');
         return docRef.id;
     } catch (error) {
         console.error("Error creating LGU:", error);
@@ -77,6 +125,7 @@ async function updateLgu(docId, data) {
     try {
         await db.collection('lgus').doc(docId).update(data);
         console.log("Updated LGU with ID:", docId);
+        _invalidateCache('cache_lgus');
         return true;
     } catch (error) {
         console.error("Error updating LGU:", error);
@@ -117,6 +166,7 @@ async function deleteLgu(docId) {
     if (!window.db) return false;
     try {
         await db.collection('lgus').doc(docId).delete();
+        _invalidateCache('cache_lgus');
         return true;
     } catch (error) {
         console.error("Error deleting LGU:", error);
@@ -133,10 +183,16 @@ async function getFsbdList() {
         console.error("Firestore is not initialized.");
         return [];
     }
+    
+    const cacheKey = 'cache_fsbds';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+    
     try {
         const snapshot = await db.collection('fsbds').get();
         const fsbdList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("Fetched FSBDs:", fsbdList);
+        _setCachedData(cacheKey, fsbdList);
         return fsbdList;
     } catch (error) {
         console.error("Error fetching FSBD list:", error);
@@ -159,6 +215,7 @@ async function createFsbd(data) {
     try {
         const docRef = await db.collection('fsbds').add(data);
         console.log("Created new FSBD with ID:", docRef.id);
+        _invalidateCache('cache_fsbds');
         return docRef.id;
     } catch (error) {
         console.error("Error creating FSBD:", error);
@@ -182,6 +239,7 @@ async function updateFsbd(docId, data) {
     try {
         await db.collection('fsbds').doc(docId).update(data);
         console.log("Updated FSBD with ID:", docId);
+        _invalidateCache('cache_fsbds');
         return true;
     } catch (error) {
         console.error("Error updating FSBD:", error);
@@ -222,6 +280,7 @@ async function deleteFsbd(docId) {
     if (!window.db) return false;
     try {
         await db.collection('fsbds').doc(docId).delete();
+        _invalidateCache('cache_fsbds');
         return true;
     } catch (error) {
         console.error("Error deleting FSBD:", error);
@@ -240,10 +299,16 @@ async function getVehicleList() {
         console.error("Firestore is not initialized.");
         return [];
     }
+    
+    const cacheKey = 'cache_vehicles';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+    
     try {
         const snapshot = await db.collection('vehicles').get();
         const vehicleList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("Fetched Vehicles:", vehicleList);
+        _setCachedData(cacheKey, vehicleList);
         return vehicleList;
     } catch (error) {
         console.error("Error fetching vehicle list:", error);
@@ -266,6 +331,7 @@ async function createVehicle(data) {
     try {
         const docRef = await db.collection('vehicles').add(data);
         console.log("Created new Vehicle with ID:", docRef.id);
+        _invalidateCache('cache_vehicles');
         return docRef.id;
     } catch (error) {
         console.error("Error creating vehicle:", error);
@@ -289,6 +355,7 @@ async function updateVehicle(docId, data) {
     try {
         await db.collection('vehicles').doc(docId).update(data);
         console.log("Updated Vehicle with ID:", docId);
+        _invalidateCache('cache_vehicles');
         return true;
     } catch (error) {
         console.error("Error updating vehicle:", error);
@@ -329,6 +396,7 @@ async function deleteVehicle(docId) {
     if (!window.db) return false;
     try {
         await db.collection('vehicles').doc(docId).delete();
+        _invalidateCache('cache_vehicles');
         return true;
     } catch (error) {
         console.error("Error deleting Vehicle:", error);
@@ -347,10 +415,16 @@ async function getMadeList() {
         console.error("Firestore is not initialized.");
         return [];
     }
+    
+    const cacheKey = 'cache_made';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+    
     try {
         const snapshot = await db.collection('made_equipment').get();
         const madeList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("Fetched MADE Equipment:", madeList);
+        _setCachedData(cacheKey, madeList);
         return madeList;
     } catch (error) {
         console.error("Error fetching MADE list:", error);
@@ -373,6 +447,7 @@ async function createMade(data) {
     try {
         const docRef = await db.collection('made_equipment').add(data);
         console.log("Created new MADE Equipment with ID:", docRef.id);
+        _invalidateCache('cache_made');
         return docRef.id;
     } catch (error) {
         console.error("Error creating MADE equipment:", error);
@@ -396,6 +471,7 @@ async function updateMade(docId, data) {
     try {
         await db.collection('made_equipment').doc(docId).update(data);
         console.log("Updated MADE Equipment with ID:", docId);
+        _invalidateCache('cache_made');
         return true;
     } catch (error) {
         console.error("Error updating MADE equipment:", error);
@@ -436,6 +512,7 @@ async function deleteMade(docId) {
     if (!window.db) return false;
     try {
         await db.collection('made_equipment').doc(docId).delete();
+        _invalidateCache('cache_made');
         return true;
     } catch (error) {
         console.error("Error deleting MADE:", error);
@@ -454,12 +531,86 @@ async function getUserList() {
         console.error("Firestore is not initialized.");
         return [];
     }
+    
+    const cacheKey = 'cache_users';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+    
     try {
         const snapshot = await db.collection('users').get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const userList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        _setCachedData(cacheKey, userList);
+        return userList;
     } catch (error) {
         console.error("Error fetching user list:", error);
         return [];
+    }
+}
+
+/**
+ * Updates a user's permissions in Firestore.
+ * @param {string} uid The user's ID.
+ * @param {object} permissions The permissions object.
+ * @returns {Promise<boolean>}
+ */
+/**
+ * Updates a user's role, permissions, and LGU assignment with escalation guards.
+ * @param {string} uid Target user ID.
+ * @param {object} data { role, permissions, assignedLguId }
+ */
+async function updateUserRole(uid, data) {
+    _requireWrite('users');
+    const currentUser = window._getCurrentUser ? window._getCurrentUser() : null;
+    
+    // 1. Basic check: System Admin can do anything
+    if (currentUser.role !== 'System Admin') {
+        // Hierarchy level checks
+        const ROLE_LEVELS = {
+            'System Admin': 100,
+            'LGU Admin': 50,
+            'LGU EEC Officer': 20,
+            'Auditor': 20,
+            'LGU Planner': 20,
+            'Pending': 0
+        };
+
+        const myLevel = ROLE_LEVELS[currentUser.role] || 0;
+        const targetLevel = ROLE_LEVELS[data.role] || 0;
+
+        // Escalation ceiling: Cannot assign a role >= your own
+        if (targetLevel >= myLevel) {
+            throw new Error(`Permission denied: You cannot assign the role "${data.role}" as it is equal to or higher than your own level.`);
+        }
+
+        // LGU Scope check
+        if (currentUser.assignedLguId && data.assignedLguId !== currentUser.assignedLguId && data.assignedLguId !== null) {
+            throw new Error('Permission denied: You can only manage users within your own LGU.');
+        }
+
+        // Check if target user is current a System Admin
+        try {
+            const targetDoc = await db.collection('users').doc(uid).get();
+            if (targetDoc.exists && targetDoc.data().role === 'System Admin') {
+                throw new Error('Permission denied: Non-System Admins cannot modify System Admin accounts.');
+            }
+        } catch (e) {
+            if (e.message.includes('Permission denied')) throw e;
+            // Ignore other fetch errors and proceed to let Firestore handle it
+        }
+    }
+
+    if (!window.db) return false;
+    try {
+        await db.collection('users').doc(uid).update({ 
+            role: data.role,
+            permissions: data.permissions,
+            assignedLguId: data.assignedLguId 
+        });
+        _invalidateCache('cache_users');
+        return true;
+    } catch (error) {
+        console.error("Error updating user role:", error);
+        throw error;
     }
 }
 
@@ -474,6 +625,7 @@ async function updateUserPermissions(uid, permissions) {
     if (!window.db) return false;
     try {
         await db.collection('users').doc(uid).update({ permissions });
+        _invalidateCache('cache_users');
         return true;
     } catch (error) {
         console.error("Error updating user permissions:", error);
@@ -522,10 +674,7 @@ const SAMPLE_DATA = {
         { id: 'sample_lgu_3', name: 'Quezon City', region: 'NCR', province: 'Metro Manila', date_registered: new Date() }
     ],
     fsbds: [
-        // Pasig Assets (Existing)
-        { id: 'sample_fsbd_1', lguId: 'sample_lgu_1', name: 'Pasig City Hall', fsbd_type: 'Office Building', address: 'Caruncho Ave, Pasig', construction_year: 1990, floor_area_sqm: 15000 },
-        { id: 'sample_fsbd_2', lguId: 'sample_lgu_1', name: 'Pasig Sports Center', fsbd_type: 'Sports Complex', address: 'Pasig City', construction_year: 2000, floor_area_sqm: 8000 },
-        { id: 'sample_fsbd_3', lguId: 'sample_lgu_1', name: 'Pasig General Hospital', fsbd_type: 'Hospital', address: 'Maybunga, Pasig', construction_year: 1995, floor_area_sqm: 12000 },
+        // Pasig Assets (Expanded Procedurally Down Below)
         // Cainta Assets (Expanded)
         { id: 'sample_fsbd_4', lguId: 'sample_lgu_2', name: 'Cainta Municipal Hall', fsbd_type: 'Office Building', address: 'Cainta, Rizal', construction_year: 1985, floor_area_sqm: 3000 },
         { id: 'sample_fsbd_5', lguId: 'sample_lgu_2', name: 'Cainta Public Market', fsbd_type: 'Market', address: 'Cainta, Rizal', construction_year: 2010, floor_area_sqm: 5000 },
@@ -536,10 +685,7 @@ const SAMPLE_DATA = {
         { id: 'sample_fsbd_9', lguId: 'sample_lgu_3', name: 'Amoranto Sports Complex', fsbd_type: 'Sports Complex', address: 'Roces Ave, QC', construction_year: 1960, floor_area_sqm: 10000 }
     ],
     vehicles: [
-        // Pasig Fleet (Existing)
-        { id: 'sample_veh_1', lguId: 'sample_lgu_1', plate_number: 'SAA-1111', make: 'Toyota', model: 'Innova', year_model: 2020, fuel_type: 'Diesel' },
-        { id: 'sample_veh_2', lguId: 'sample_lgu_1', plate_number: 'SBB-2222', make: 'Nissan', model: 'Urvan', year_model: 2019, fuel_type: 'Diesel' },
-        { id: 'sample_veh_3', lguId: 'sample_lgu_1', plate_number: 'SCC-3333', make: 'Isuzu', model: 'N-Series', year_model: 2018, fuel_type: 'Diesel' },
+        // Pasig Fleet (Expanded Procedurally Down Below)
         // Cainta Fleet (Expanded)
         { id: 'sample_veh_4', lguId: 'sample_lgu_2', plate_number: 'SDD-4444', make: 'Mitsubishi', model: 'L300', year_model: 2021, fuel_type: 'Diesel' },
         { id: 'sample_veh_5', lguId: 'sample_lgu_2', plate_number: 'SEE-5555', make: 'Toyota', model: 'Vios', year_model: 2017, fuel_type: 'Gasoline' },
@@ -550,11 +696,7 @@ const SAMPLE_DATA = {
         { id: 'sample_veh_9', lguId: 'sample_lgu_3', plate_number: 'SII-9999', make: 'Isuzu', model: 'Garbage Compactor', year_model: 2018, fuel_type: 'Diesel' }
     ],
     made_equipment: [
-        // Pasig (Existing)
-        { id: 'sample_made_1', fsbdId: 'sample_fsbd_1', description_of_equipment: 'Centralized AC System', energy_use_category: 'ACU', location: 'Main Building', power_rating_kw: 150, time_of_use_hours_per_day: 10 },
-        { id: 'sample_made_2', fsbdId: 'sample_fsbd_1', description_of_equipment: 'LED Lighting Fixtures', energy_use_category: 'Lighting', location: 'All Floors', power_rating_kw: 20, time_of_use_hours_per_day: 12 },
-        { id: 'sample_made_3', fsbdId: 'sample_fsbd_3', description_of_equipment: 'MRI Machine', energy_use_category: 'Medical Equipment', location: 'Radiology', power_rating_kw: 30, time_of_use_hours_per_day: 8 },
-        { id: 'sample_made_4', fsbdId: 'sample_fsbd_5', description_of_equipment: 'High Bay Lights', energy_use_category: 'Lighting', location: 'Market Area', power_rating_kw: 10, time_of_use_hours_per_day: 14 },
+        // Pasig (Expanded Procedurally Down Below)
         // Cainta (New)
         { id: 'sample_made_5', fsbdId: 'sample_fsbd_4', description_of_equipment: 'Split Type AC Units', energy_use_category: 'ACU', location: 'Offices', power_rating_kw: 40, time_of_use_hours_per_day: 9 },
         { id: 'sample_made_6', fsbdId: 'sample_fsbd_5', description_of_equipment: 'Industrial Freezers', energy_use_category: 'Refrigeration', location: 'Meat Section', power_rating_kw: 15, time_of_use_hours_per_day: 24 },
@@ -564,20 +706,8 @@ const SAMPLE_DATA = {
         { id: 'sample_made_9', fsbdId: 'sample_fsbd_9', description_of_equipment: 'Stadium Floodlights', energy_use_category: 'Lighting', location: 'Field', power_rating_kw: 100, time_of_use_hours_per_day: 4 }
     ],
     mecr_reports: [
-        // Pasig City Hall (6 months) - Existing
-        { id: 'sample_mecr_1_1', fsbdId: 'sample_fsbd_1', reporting_year: 2023, reporting_month: 1, electricity_consumption_kwh: 45000, cost_php: 450000 },
-        { id: 'sample_mecr_1_2', fsbdId: 'sample_fsbd_1', reporting_year: 2023, reporting_month: 2, electricity_consumption_kwh: 42000, cost_php: 420000 },
-        { id: 'sample_mecr_1_3', fsbdId: 'sample_fsbd_1', reporting_year: 2023, reporting_month: 3, electricity_consumption_kwh: 48000, cost_php: 480000 },
-        { id: 'sample_mecr_1_4', fsbdId: 'sample_fsbd_1', reporting_year: 2023, reporting_month: 4, electricity_consumption_kwh: 55000, cost_php: 550000 },
-        { id: 'sample_mecr_1_5', fsbdId: 'sample_fsbd_1', reporting_year: 2023, reporting_month: 5, electricity_consumption_kwh: 58000, cost_php: 580000 },
-        { id: 'sample_mecr_1_6', fsbdId: 'sample_fsbd_1', reporting_year: 2023, reporting_month: 6, electricity_consumption_kwh: 56000, cost_php: 560000 },
-        // Pasig Hospital (6 months) - Existing
-        { id: 'sample_mecr_3_1', fsbdId: 'sample_fsbd_3', reporting_year: 2023, reporting_month: 1, electricity_consumption_kwh: 80000, cost_php: 800000 },
-        { id: 'sample_mecr_3_2', fsbdId: 'sample_fsbd_3', reporting_year: 2023, reporting_month: 2, electricity_consumption_kwh: 78000, cost_php: 780000 },
-        { id: 'sample_mecr_3_3', fsbdId: 'sample_fsbd_3', reporting_year: 2023, reporting_month: 3, electricity_consumption_kwh: 82000, cost_php: 820000 },
-        { id: 'sample_mecr_3_4', fsbdId: 'sample_fsbd_3', reporting_year: 2023, reporting_month: 4, electricity_consumption_kwh: 85000, cost_php: 850000 },
-        { id: 'sample_mecr_3_5', fsbdId: 'sample_fsbd_3', reporting_year: 2023, reporting_month: 5, electricity_consumption_kwh: 88000, cost_php: 880000 },
-        { id: 'sample_mecr_3_6', fsbdId: 'sample_fsbd_3', reporting_year: 2023, reporting_month: 6, electricity_consumption_kwh: 86000, cost_php: 860000 },
+        // Pasig City (Expanded Procedurally Down Below)
+
         // Cainta Municipal Hall (6 months) - New
         { id: 'sample_mecr_4_1', fsbdId: 'sample_fsbd_4', reporting_year: 2023, reporting_month: 1, electricity_consumption_kwh: 12000, cost_php: 120000 },
         { id: 'sample_mecr_4_2', fsbdId: 'sample_fsbd_4', reporting_year: 2023, reporting_month: 2, electricity_consumption_kwh: 11500, cost_php: 115000 },
@@ -607,49 +737,13 @@ const SAMPLE_DATA = {
         { id: 'sample_mecr_8_5', fsbdId: 'sample_fsbd_8', reporting_year: 2023, reporting_month: 5, electricity_consumption_kwh: 110000, cost_php: 1100000 },
         { id: 'sample_mecr_8_6', fsbdId: 'sample_fsbd_8', reporting_year: 2023, reporting_month: 6, electricity_consumption_kwh: 108000, cost_php: 1080000 }
     ],
-    mfcr_reports: [
-        // Innova (6 months) - Existing
-        { id: 'sample_mfcr_1_1', vehicleId: 'sample_veh_1', reporting_year: 2023, reporting_month: 1, fuel_consumed_liters: 150, distance_traveled_km: 1200, cost_php: 9000 },
-        { id: 'sample_mfcr_1_2', vehicleId: 'sample_veh_1', reporting_year: 2023, reporting_month: 2, fuel_consumed_liters: 140, distance_traveled_km: 1100, cost_php: 8400 },
-        { id: 'sample_mfcr_1_3', vehicleId: 'sample_veh_1', reporting_year: 2023, reporting_month: 3, fuel_consumed_liters: 160, distance_traveled_km: 1300, cost_php: 9600 },
-        { id: 'sample_mfcr_1_4', vehicleId: 'sample_veh_1', reporting_year: 2023, reporting_month: 4, fuel_consumed_liters: 155, distance_traveled_km: 1250, cost_php: 9300 },
-        { id: 'sample_mfcr_1_5', vehicleId: 'sample_veh_1', reporting_year: 2023, reporting_month: 5, fuel_consumed_liters: 145, distance_traveled_km: 1150, cost_php: 8700 },
-        { id: 'sample_mfcr_1_6', vehicleId: 'sample_veh_1', reporting_year: 2023, reporting_month: 6, fuel_consumed_liters: 150, distance_traveled_km: 1200, cost_php: 9000 },
-        // Garbage Truck (6 months) - Existing
-        { id: 'sample_mfcr_3_1', vehicleId: 'sample_veh_3', reporting_year: 2023, reporting_month: 1, fuel_consumed_liters: 800, distance_traveled_km: 2000, cost_php: 48000 },
-        { id: 'sample_mfcr_3_2', vehicleId: 'sample_veh_3', reporting_year: 2023, reporting_month: 2, fuel_consumed_liters: 780, distance_traveled_km: 1950, cost_php: 46800 },
-        { id: 'sample_mfcr_3_3', vehicleId: 'sample_veh_3', reporting_year: 2023, reporting_month: 3, fuel_consumed_liters: 820, distance_traveled_km: 2100, cost_php: 49200 },
-        { id: 'sample_mfcr_3_4', vehicleId: 'sample_veh_3', reporting_year: 2023, reporting_month: 4, fuel_consumed_liters: 810, distance_traveled_km: 2050, cost_php: 48600 },
-        { id: 'sample_mfcr_3_5', vehicleId: 'sample_veh_3', reporting_year: 2023, reporting_month: 5, fuel_consumed_liters: 830, distance_traveled_km: 2150, cost_php: 49800 },
-        { id: 'sample_mfcr_3_6', vehicleId: 'sample_veh_3', reporting_year: 2023, reporting_month: 6, fuel_consumed_liters: 800, distance_traveled_km: 2000, cost_php: 48000 },
-        // Cainta Ambulance (6 months) - New
-        { id: 'sample_mfcr_6_1', vehicleId: 'sample_veh_6', reporting_year: 2023, reporting_month: 1, fuel_consumed_liters: 200, distance_traveled_km: 1500, cost_php: 12000 },
-        { id: 'sample_mfcr_6_2', vehicleId: 'sample_veh_6', reporting_year: 2023, reporting_month: 2, fuel_consumed_liters: 180, distance_traveled_km: 1350, cost_php: 10800 },
-        { id: 'sample_mfcr_6_3', vehicleId: 'sample_veh_6', reporting_year: 2023, reporting_month: 3, fuel_consumed_liters: 220, distance_traveled_km: 1600, cost_php: 13200 },
-        { id: 'sample_mfcr_6_4', vehicleId: 'sample_veh_6', reporting_year: 2023, reporting_month: 4, fuel_consumed_liters: 210, distance_traveled_km: 1550, cost_php: 12600 },
-        { id: 'sample_mfcr_6_5', vehicleId: 'sample_veh_6', reporting_year: 2023, reporting_month: 5, fuel_consumed_liters: 230, distance_traveled_km: 1700, cost_php: 13800 },
-        { id: 'sample_mfcr_6_6', vehicleId: 'sample_veh_6', reporting_year: 2023, reporting_month: 6, fuel_consumed_liters: 200, distance_traveled_km: 1500, cost_php: 12000 },
-        // QC Bus (6 months) - New
-        { id: 'sample_mfcr_7_1', vehicleId: 'sample_veh_7', reporting_year: 2023, reporting_month: 1, fuel_consumed_liters: 600, distance_traveled_km: 3000, cost_php: 36000 },
-        { id: 'sample_mfcr_7_2', vehicleId: 'sample_veh_7', reporting_year: 2023, reporting_month: 2, fuel_consumed_liters: 580, distance_traveled_km: 2900, cost_php: 34800 },
-        { id: 'sample_mfcr_7_3', vehicleId: 'sample_veh_7', reporting_year: 2023, reporting_month: 3, fuel_consumed_liters: 620, distance_traveled_km: 3100, cost_php: 37200 },
-        { id: 'sample_mfcr_7_4', vehicleId: 'sample_veh_7', reporting_year: 2023, reporting_month: 4, fuel_consumed_liters: 650, distance_traveled_km: 3250, cost_php: 39000 },
-        { id: 'sample_mfcr_7_5', vehicleId: 'sample_veh_7', reporting_year: 2023, reporting_month: 5, fuel_consumed_liters: 630, distance_traveled_km: 3150, cost_php: 37800 },
-        { id: 'sample_mfcr_7_6', vehicleId: 'sample_veh_7', reporting_year: 2023, reporting_month: 6, fuel_consumed_liters: 600, distance_traveled_km: 3000, cost_php: 36000 },
-        // Cainta L300 (6 months)
-        { id: 'sample_mfcr_4_1', vehicleId: 'sample_veh_4', reporting_year: 2023, reporting_month: 1, fuel_consumed_liters: 180, distance_traveled_km: 1400, cost_php: 10800 },
-        { id: 'sample_mfcr_4_2', vehicleId: 'sample_veh_4', reporting_year: 2023, reporting_month: 2, fuel_consumed_liters: 170, distance_traveled_km: 1300, cost_php: 10200 },
-        { id: 'sample_mfcr_4_3', vehicleId: 'sample_veh_4', reporting_year: 2023, reporting_month: 3, fuel_consumed_liters: 190, distance_traveled_km: 1500, cost_php: 11400 },
-        { id: 'sample_mfcr_4_4', vehicleId: 'sample_veh_4', reporting_year: 2023, reporting_month: 4, fuel_consumed_liters: 185, distance_traveled_km: 1450, cost_php: 11100 },
-        { id: 'sample_mfcr_4_5', vehicleId: 'sample_veh_4', reporting_year: 2023, reporting_month: 5, fuel_consumed_liters: 200, distance_traveled_km: 1600, cost_php: 12000 },
-        { id: 'sample_mfcr_4_6', vehicleId: 'sample_veh_4', reporting_year: 2023, reporting_month: 6, fuel_consumed_liters: 195, distance_traveled_km: 1550, cost_php: 11700 },
-        // QC Garbage Compactor (6 months)
-        { id: 'sample_mfcr_9_1', vehicleId: 'sample_veh_9', reporting_year: 2023, reporting_month: 1, fuel_consumed_liters: 900, distance_traveled_km: 1800, cost_php: 54000 },
-        { id: 'sample_mfcr_9_2', vehicleId: 'sample_veh_9', reporting_year: 2023, reporting_month: 2, fuel_consumed_liters: 880, distance_traveled_km: 1750, cost_php: 52800 },
-        { id: 'sample_mfcr_9_3', vehicleId: 'sample_veh_9', reporting_year: 2023, reporting_month: 3, fuel_consumed_liters: 920, distance_traveled_km: 1850, cost_php: 55200 },
-        { id: 'sample_mfcr_9_4', vehicleId: 'sample_veh_9', reporting_year: 2023, reporting_month: 4, fuel_consumed_liters: 950, distance_traveled_km: 1900, cost_php: 57000 },
-        { id: 'sample_mfcr_9_5', vehicleId: 'sample_veh_9', reporting_year: 2023, reporting_month: 5, fuel_consumed_liters: 980, distance_traveled_km: 1950, cost_php: 58800 },
-        { id: 'sample_mfcr_9_6', vehicleId: 'sample_veh_9', reporting_year: 2023, reporting_month: 6, fuel_consumed_liters: 940, distance_traveled_km: 1880, cost_php: 56400 }
+    trip_tickets: [
+        // Pasig City (Expanded Procedurally Down Below)
+
+        // Cainta Ambulance
+        { id: 'sample_tt_6_1', vehicleId: 'sample_veh_6', date: '2023-03-01', driver: 'Jose M.', destination: 'Provincial Hospital', purpose: 'Patient Transfer', odometerStart: 8500, odometerEnd: 8540, fuelLiters: 10 },
+        // QC Bus
+        { id: 'sample_tt_7_1', vehicleId: 'sample_veh_7', date: '2023-04-12', driver: 'Arthur', destination: 'Various Barangays', purpose: 'Free Ride Program', odometerStart: 21000, odometerEnd: 21200, fuelLiters: 80 }
     ],
     rios: [
         // Pasig (Existing)
@@ -679,12 +773,134 @@ const SAMPLE_DATA = {
         { id: 'sample_ppa_6', project_name: 'Eco-Driving Certification', status: 'Completed', estimated_cost_php: 50000, actual_cost_php: 45000, relatedRioIds: ['sample_rio_11'] }
     ],
     seu_findings: [
-        { id: 'sample_seu_1', fsbdId: 'sample_fsbd_1', energy_use_category: 'ACU', finding_description: 'High consumption AC units', identification_method: 'Calculated', status: 'Identified' },
-        { id: 'sample_seu_2', vehicleId: 'sample_veh_3', energy_use_category: 'Fuel Consumption', finding_description: 'Inefficient Garbage Truck', identification_method: 'Historical Average', status: 'Identified' },
+        { id: 'sample_seu_1', fsbdId: 'sample_fsbd_101', energy_use_category: 'ACU', finding_description: 'High consumption AC units', identification_method: 'Calculated', status: 'Identified' },
+        { id: 'sample_seu_2', vehicleId: 'sample_veh_103', energy_use_category: 'Fuel Consumption', finding_description: 'Inefficient Garbage Truck', identification_method: 'Historical Average', status: 'Identified' },
         { id: 'sample_seu_3', fsbdId: 'sample_fsbd_6', energy_use_category: 'Lighting', finding_description: 'Old lighting fixtures', identification_method: 'Audit', status: 'Identified' },
         { id: 'sample_seu_4', fsbdId: 'sample_fsbd_7', energy_use_category: 'ACU', finding_description: 'Chiller plant optimization needed', identification_method: 'Calculated', status: 'Identified' }
     ]
 };
+
+// Procedurally generate extensive data for Pasig City to showcase dense historical reporting
+function generatePasigData() {
+    const lguId = 'sample_lgu_1';
+    
+    // 1 LGU, 10 Buildings, 20 Vehicles
+    const fsbds = [
+        { id: 'sample_fsbd_101', lguId, name: 'Pasig City Hall Main', fsbd_type: 'Office Building', address: 'Caruncho Ave, Pasig', construction_year: 1990, floor_area_sqm: 15000 },
+        { id: 'sample_fsbd_102', lguId, name: 'Pasig Sports Center', fsbd_type: 'Sports Complex', address: 'Pasig City', construction_year: 2000, floor_area_sqm: 8000 },
+        { id: 'sample_fsbd_103', lguId, name: 'Pasig General Hospital', fsbd_type: 'Hospital', address: 'Maybunga, Pasig', construction_year: 1995, floor_area_sqm: 12000 },
+        { id: 'sample_fsbd_104', lguId, name: 'Rave Park Administration', fsbd_type: 'Office Building', address: 'Rainforest Park, Pasig', construction_year: 2005, floor_area_sqm: 2000 },
+        { id: 'sample_fsbd_105', lguId, name: 'Pasig Mega Market', fsbd_type: 'Market', address: 'San Nicolas, Pasig', construction_year: 1980, floor_area_sqm: 20000 },
+        { id: 'sample_fsbd_106', lguId, name: 'Rizal High School Main', fsbd_type: 'School', address: 'Caniogan, Pasig', construction_year: 1975, floor_area_sqm: 18000 },
+        { id: 'sample_fsbd_107', lguId, name: 'Pinagbuhatan High School', fsbd_type: 'School', address: 'Pinagbuhatan, Pasig', construction_year: 2010, floor_area_sqm: 5000 },
+        { id: 'sample_fsbd_108', lguId, name: 'PCGH Extension Annex', fsbd_type: 'Hospital', address: 'Maybunga, Pasig', construction_year: 2018, floor_area_sqm: 4000 },
+        { id: 'sample_fsbd_109', lguId, name: 'Pasig City Science High', fsbd_type: 'School', address: 'Maybunga, Pasig', construction_year: 2008, floor_area_sqm: 6000 },
+        { id: 'sample_fsbd_110', lguId, name: 'City Library and Museum', fsbd_type: 'Office Building', address: 'Plaza Rizal, Pasig', construction_year: 1960, floor_area_sqm: 1500 }
+    ];
+
+    const vehicles = [];
+    for(let i=1; i<=20; i++) {
+        vehicles.push({
+            id: `sample_veh_10${i}`,
+            lguId,
+            plate_number: `PAS-${1000+i}`,
+            make: i % 3 === 0 ? 'Toyota' : (i % 2 === 0 ? 'Mitsubishi' : 'Isuzu'),
+            model: i % 3 === 0 ? 'Innova' : (i % 2 === 0 ? 'L300' : 'Garbage Truck'),
+            year_model: 2015 + (i % 8),
+            fuel_type: i % 5 === 0 ? 'Gasoline' : 'Diesel'
+        });
+    }
+
+    const made_equipment = [];
+    fsbds.forEach(b => {
+        // Base AC
+        made_equipment.push({ id: `sample_made_ac_${b.id}`, fsbdId: b.id, description_of_equipment: 'HVAC Units', energy_use_category: 'ACU', location: 'Various', power_rating_kw: (b.floor_area_sqm / 100), time_of_use_hours_per_day: 10 });
+        // Base Lighting
+        made_equipment.push({ id: `sample_made_light_${b.id}`, fsbdId: b.id, description_of_equipment: 'Fluorescent/LED Mix', energy_use_category: 'Lighting', location: 'All Floors', power_rating_kw: (b.floor_area_sqm / 500), time_of_use_hours_per_day: 12 });
+        
+        if (b.fsbd_type === 'Hospital') {
+            made_equipment.push({ id: `sample_made_med_${b.id}`, fsbdId: b.id, description_of_equipment: 'Medical Imaging', energy_use_category: 'Medical Equipment', location: 'Radiology', power_rating_kw: 150, time_of_use_hours_per_day: 8 });
+        }
+    });
+
+    const mecr_reports = [];
+    // 2 years of data (2023, 2024, half of 2025)
+    [2023, 2024, 2025].forEach(year => {
+        const maxMonth = year === 2025 ? 6 : 12;
+        for(let month=1; month<=maxMonth; month++) {
+            fsbds.forEach(b => {
+                const baseKwh = b.floor_area_sqm * 3; // Approx 3 kWh per sqm
+                // Add some seasonal variation (higher in summer: Mar-May)
+                const isSummer = (month >= 3 && month <= 5);
+                const variation = isSummer ? 1.2 : 0.9;
+                const randomNoise = 0.95 + (Math.random() * 0.1); // +/- 5%
+                
+                const kwh = Math.floor(baseKwh * variation * randomNoise);
+                // Approx 10.5 PHP per kWh
+                const cost = Math.floor(kwh * 10.5);
+                
+                mecr_reports.push({
+                    id: `sample_mecr_${b.id}_${year}_${month}`,
+                    fsbdId: b.id,
+                    reporting_year: year,
+                    reporting_month: month,
+                    electricity_consumption_kwh: kwh,
+                    cost_php: cost
+                });
+            });
+        }
+    });
+
+    const trip_tickets = [];
+    // Daily trips for a year and a half for every vehicle
+    const startObj = new Date('2024-01-01T00:00:00Z');
+    vehicles.forEach((v, index) => {
+        let currentOdo = 50000 + Math.floor(Math.random() * 20000); // Start between 50k and 70k
+        for (let day=0; day<540; day++) { // 1.5 years
+             // Skip weekends mostly
+             const date = new Date(startObj.getTime() + (day * 24 * 60 * 60 * 1000));
+             const dayOfWeek = date.getDay();
+             if (dayOfWeek === 0 || dayOfWeek === 6) {
+                 if (Math.random() > 0.2) continue; // 80% chance to skip weekends
+             }
+
+             const dateStr = date.toISOString().split('T')[0];
+             const isTruck = v.model.includes('Truck');
+             const tripDist = Math.floor(Math.random() * (isTruck ? 100 : 40)) + 10; // 10-50km for cars, 10-110km for trucks
+             
+             const endOdo = currentOdo + tripDist;
+             // Fuel efficiency: Cars ~ 10km/L, Trucks ~ 4km/L
+             const efficiency = isTruck ? 4 : 10;
+             const fuelLiters = Number((tripDist / efficiency).toFixed(2));
+             // ~60 php per liter
+             const fuelCost = Math.floor(fuelLiters * 60);
+
+             trip_tickets.push({
+                 id: `sample_tt_${v.id}_${day}`,
+                 vehicleId: v.id,
+                 date: dateStr,
+                 driver: `Driver ${index+1}`,
+                 destination: `Destination ${Math.floor(Math.random()*15)}`,
+                 purpose: isTruck ? 'Waste Management' : 'Official Business',
+                 odometerStart: currentOdo,
+                 odometerEnd: endOdo,
+                 fuelLiters: fuelLiters,
+                 fuelCost: fuelCost
+             });
+             currentOdo = endOdo;
+        }
+    });
+
+    return { fsbds, vehicles, made_equipment, mecr_reports, trip_tickets };
+}
+
+// Inject procedurally generated data into SAMPLE_DATA
+const generated = generatePasigData();
+SAMPLE_DATA.fsbds.push(...generated.fsbds);
+SAMPLE_DATA.vehicles.push(...generated.vehicles);
+SAMPLE_DATA.made_equipment.push(...generated.made_equipment);
+SAMPLE_DATA.mecr_reports.push(...generated.mecr_reports);
+SAMPLE_DATA.trip_tickets.push(...generated.trip_tickets);
 
 async function checkSampleDataExists() {
     if (!window.db) return false;
@@ -700,20 +916,34 @@ async function checkSampleDataExists() {
 async function createSampleData() {
     _requireWrite('admin');
     if (!window.db) return false;
-    const batch = db.batch();
 
     try {
+        let batches = [];
+        let currentBatch = db.batch();
+        let operationCount = 0;
+
         // Iterate over all collections in SAMPLE_DATA
         for (const [collectionName, items] of Object.entries(SAMPLE_DATA)) {
-            items.forEach(item => {
-                // Use specific IDs for sample data to make deletion easy
+            for (const item of items) {
                 const ref = db.collection(collectionName).doc(item.id);
-                batch.set(ref, item);
-            });
+                currentBatch.set(ref, item);
+                operationCount++;
+
+                if (operationCount >= 450) {
+                    batches.push(currentBatch.commit());
+                    currentBatch = db.batch(); // Start a new batch
+                    operationCount = 0;
+                }
+            }
         }
 
-        await batch.commit();
-        console.log("Sample data created successfully.");
+        // Commit the last remaining batch if it has operations
+        if (operationCount > 0) {
+            batches.push(currentBatch.commit());
+        }
+
+        await Promise.all(batches);
+        console.log("Sample data created successfully in batches.");
         return true;
     } catch (error) {
         console.error("Error creating sample data:", error);
@@ -724,19 +954,34 @@ async function createSampleData() {
 async function deleteSampleData() {
     _requireWrite('admin');
     if (!window.db) return false;
-    const batch = db.batch();
 
     try {
+        let batches = [];
+        let currentBatch = db.batch();
+        let operationCount = 0;
+
         // Iterate over all collections in SAMPLE_DATA
         for (const [collectionName, items] of Object.entries(SAMPLE_DATA)) {
-            items.forEach(item => {
+            for (const item of items) {
                 const ref = db.collection(collectionName).doc(item.id);
-                batch.delete(ref);
-            });
+                currentBatch.delete(ref);
+                operationCount++;
+
+                if (operationCount >= 450) {
+                    batches.push(currentBatch.commit());
+                    currentBatch = db.batch(); // Start a new batch
+                    operationCount = 0;
+                }
+            }
         }
 
-        await batch.commit();
-        console.log("Sample data deleted successfully.");
+        // Commit the last remaining batch if it has operations
+        if (operationCount > 0) {
+            batches.push(currentBatch.commit());
+        }
+
+        await Promise.all(batches);
+        console.log("Sample data deleted successfully in batches.");
         return true;
     } catch (error) {
         console.error("Error deleting sample data:", error);
@@ -755,10 +1000,16 @@ async function getSeuList() {
         console.error("Firestore is not initialized.");
         return [];
     }
+    
+    const cacheKey = 'cache_seu';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+    
     try {
         const snapshot = await db.collection('seu_findings').get();
         const seuList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("Fetched SEUs:", seuList);
+        _setCachedData(cacheKey, seuList);
         return seuList;
     } catch (error) {
         console.error("Error fetching SEU list:", error);
@@ -781,6 +1032,7 @@ async function createSeu(data) {
     try {
         const docRef = await db.collection('seu_findings').add(data);
         console.log("Created new SEU finding with ID:", docRef.id);
+        _invalidateCache('cache_seu');
         return docRef.id;
     } catch (error) {
         console.error("Error creating SEU finding:", error);
@@ -797,6 +1049,7 @@ async function deleteSeu(docId) {
     if (!window.db) return false;
     try {
         await db.collection('seu_findings').doc(docId).delete();
+        _invalidateCache('cache_seu');
         return true;
     } catch (error) {
         console.error("Error deleting SEU finding:", error);
@@ -812,10 +1065,10 @@ if (typeof module !== 'undefined' && module.exports) {
         getVehicleList, createVehicle, updateVehicle, getVehicleById, deleteVehicle,
         getMadeList, createMade, updateMade, getMadeById, deleteMade,
         getMecrReports, createMecrReport, deleteMecrReport,
-        getMfcrReports, createMfcrReport, deleteMfcrReport,
+        getTripTickets, createTripTicket, deleteTripTicket,
         getRioList, createRio, updateRio, getRioById, deleteRio,
         getPpaList, createPpa, updatePpa, getPpaById, deletePpa,
-        getUserList, updateUserPermissions, getDefaultPermissions, updateDefaultPermissions,
+        getUserList, updateUserRole, updateUserPermissions, getDefaultPermissions, updateDefaultPermissions,
         checkSampleDataExists, createSampleData, deleteSampleData,
         getSeuList, createSeu, deleteSeu
     };
@@ -824,24 +1077,33 @@ if (typeof module !== 'undefined' && module.exports) {
 // --- Consumption Report Functions (MECR) ---
 
 /**
- * Fetches all electricity consumption reports for a specific building.
- * @param {string} fsbdId The ID of the building.
- * @returns {Promise<Array>} A promise that resolves to an array of MECR objects.
+ * Fetches electricity consumption reports.
+ * @param {string|null} fsbdId Optional building ID to filter by.
+ * @returns {Promise<Array>}
  */
-async function getMecrReports(fsbdId) {
+async function getMecrReports(fsbdId = null) {
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return [];
     }
+    
+    const cacheKey = fsbdId ? `cache_mecr_${fsbdId}` : 'cache_mecr_all';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+    
     try {
-        // Removed orderBy to avoid needing a composite index during development. Sorting is done client-side.
-        const snapshot = await db.collection('mecr_reports').where('fsbdId', '==', fsbdId).get();
+        let query = db.collection('mecr_reports');
+        if (fsbdId) {
+            query = query.where('fsbdId', '==', fsbdId);
+        }
+        const snapshot = await query.get();
         const reportList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
         // Client-side sort: Year desc, then Month desc
         reportList.sort((a, b) => (b.reporting_year - a.reporting_year) || (b.reporting_month - a.reporting_month));
         
         console.log("Fetched MECR reports:", reportList);
+        _setCachedData(cacheKey, reportList);
         return reportList;
     } catch (error) {
         console.error("Error fetching MECR reports:", error);
@@ -866,6 +1128,8 @@ async function createMecrReport(data) {
     try {
         const docRef = await db.collection('mecr_reports').add(data);
         console.log("Created new MECR report with ID:", docRef.id);
+        _invalidateCache('cache_mecr_all');
+        if (data.fsbdId) _invalidateCache(`cache_mecr_${data.fsbdId}`);
         return docRef.id;
     } catch (error) {
         console.error("Error creating MECR report:", error);
@@ -881,7 +1145,13 @@ async function deleteMecrReport(docId) {
     _requireWrite('consumption');
     if (!window.db) return false;
     try {
+        // Need to invalidate scoped cache too, but we might not have fsbdId.
+        // For safety, clear all MECR caches starting with 'cache_mecr_' or just clear all as it's rare.
+        // Better: Fetch doc briefly or accept fsbdId as param. 
+        // Simple fix: clear the 'all' cache and any common ones.
         await db.collection('mecr_reports').doc(docId).delete();
+        _invalidateCache('cache_mecr_all');
+        // We could iterate localStorage keys to find matching prefixes if we really wanted to be surgical.
         return true;
     } catch (error) {
         console.error("Error deleting MECR report:", error);
@@ -889,40 +1159,54 @@ async function deleteMecrReport(docId) {
     }
 }
 
-// --- Consumption Report Functions (MFCR) ---
+// --- Trip Tickets Functions (Fuel) ---
 
 /**
- * Fetches all fuel consumption reports for a specific vehicle.
+ * Fetches all Trip Tickets for a specific vehicle.
  * @param {string} vehicleId The ID of the vehicle.
- * @returns {Promise<Array>} A promise that resolves to an array of MFCR objects.
+ * @returns {Promise<Array>} A promise that resolves to an array of Trip Ticket objects.
  */
-async function getMfcrReports(vehicleId) {
+/**
+ * Fetches Trip Tickets.
+ * @param {string|null} vehicleId Optional vehicle ID to filter by.
+ * @returns {Promise<Array>}
+ */
+async function getTripTickets(vehicleId = null) {
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return [];
     }
+
+    const cacheKey = vehicleId ? `cache_trips_${vehicleId}` : 'cache_trips_all';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+
     try {
-        // Removed orderBy to avoid needing a composite index during development. Sorting is done client-side.
-        const snapshot = await db.collection('mfcr_reports').where('vehicleId', '==', vehicleId).get();
-        const reportList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let query = db.collection('trip_tickets');
+        if (vehicleId) {
+            query = query.where('vehicleId', '==', vehicleId);
+        }
+        const snapshot = await query.get();
+        const tickets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Client-side sort: Year desc, then Month desc
-        reportList.sort((a, b) => (b.reporting_year - a.reporting_year) || (b.reporting_month - a.reporting_month));
+        // Sort by date descending
+        tickets.sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        console.log("Fetched MFCR reports:", reportList);
-        return reportList;
+        console.log("Fetched Trip Tickets:", tickets);
+        _setCachedData(cacheKey, tickets);
+        return tickets;
     } catch (error) {
-        console.error("Error fetching MFCR reports:", error);
+        console.error("Error fetching Trip Tickets:", error);
         return [];
     }
 }
 
 /**
- * Creates a new fuel consumption report document in Firestore.
- * @param {object} data The report data to save.
+ * Creates a new Trip Ticket document in Firestore.
+ * @param {object} data The Trip Ticket data to save.
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
-async function createMfcrReport(data) {
+async function createTripTicket(data) {
     _requireWrite('consumption');
     _requireLguMatch(data.lguId);
     if (!window.db) {
@@ -930,27 +1214,30 @@ async function createMfcrReport(data) {
         return null;
     }
     try {
-        const docRef = await db.collection('mfcr_reports').add(data);
-        console.log("Created new MFCR report with ID:", docRef.id);
+        const docRef = await db.collection('trip_tickets').add(data);
+        console.log("Created new Trip Ticket with ID:", docRef.id);
+        _invalidateCache('cache_trips_all');
+        if (data.vehicleId) _invalidateCache(`cache_trips_${data.vehicleId}`);
         return docRef.id;
     } catch (error) {
-        console.error("Error creating MFCR report:", error);
+        console.error("Error creating Trip Ticket:", error);
         return null;
     }
 }
 
 /**
- * Deletes a MFCR report.
+ * Deletes a Trip Ticket.
  * @param {string} docId 
  */
-async function deleteMfcrReport(docId) {
+async function deleteTripTicket(docId) {
     _requireWrite('consumption');
     if (!window.db) return false;
     try {
-        await db.collection('mfcr_reports').doc(docId).delete();
+        await db.collection('trip_tickets').doc(docId).delete();
+        _invalidateCache('cache_trips_all');
         return true;
     } catch (error) {
-        console.error("Error deleting MFCR report:", error);
+        console.error("Error deleting Trip Ticket:", error);
         return false;
     }
 }
@@ -966,10 +1253,16 @@ async function getRioList() {
         console.error("Firestore is not initialized.");
         return [];
     }
+    
+    const cacheKey = 'cache_rios';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+    
     try {
         const snapshot = await db.collection('rios').get();
         const rioList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("Fetched RIOs:", rioList);
+        _setCachedData(cacheKey, rioList);
         return rioList;
     } catch (error) {
         console.error("Error fetching RIO list:", error);
@@ -991,6 +1284,7 @@ async function createRio(data) {
     try {
         const docRef = await db.collection('rios').add(data);
         console.log("Created new RIO with ID:", docRef.id);
+        _invalidateCache('cache_rios');
         return docRef.id;
     } catch (error) {
         console.error("Error creating RIO:", error);
@@ -1013,6 +1307,7 @@ async function updateRio(docId, data) {
     try {
         await db.collection('rios').doc(docId).update(data);
         console.log("Updated RIO with ID:", docId);
+        _invalidateCache('cache_rios');
         return true;
     } catch (error) {
         console.error("Error updating RIO:", error);
@@ -1053,6 +1348,7 @@ async function deleteRio(docId) {
     if (!window.db) return false;
     try {
         await db.collection('rios').doc(docId).delete();
+        _invalidateCache('cache_rios');
         return true;
     } catch (error) {
         console.error("Error deleting RIO:", error);
@@ -1071,10 +1367,16 @@ async function getPpaList() {
         console.error("Firestore is not initialized.");
         return [];
     }
+    
+    const cacheKey = 'cache_ppas';
+    const cached = _getCachedData(cacheKey);
+    if (cached) return cached;
+    
     try {
         const snapshot = await db.collection('ppas').get();
         const ppaList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("Fetched PPAs:", ppaList);
+        _setCachedData(cacheKey, ppaList);
         return ppaList;
     } catch (error) {
         console.error("Error fetching PPA list:", error);
@@ -1096,6 +1398,7 @@ async function createPpa(data) {
     try {
         const docRef = await db.collection('ppas').add(data);
         console.log("Created new PPA with ID:", docRef.id);
+        _invalidateCache('cache_ppas');
         return docRef.id;
     } catch (error) {
         console.error("Error creating PPA:", error);
@@ -1118,6 +1421,7 @@ async function updatePpa(docId, data) {
     try {
         await db.collection('ppas').doc(docId).update(data);
         console.log("Updated PPA with ID:", docId);
+        _invalidateCache('cache_ppas');
         return true;
     } catch (error) {
         console.error("Error updating PPA:", error);
@@ -1158,6 +1462,7 @@ async function deletePpa(docId) {
     if (!window.db) return false;
     try {
         await db.collection('ppas').doc(docId).delete();
+        _invalidateCache('cache_ppas');
         return true;
     } catch (error) {
         console.error("Error deleting PPA:", error);

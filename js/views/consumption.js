@@ -39,15 +39,15 @@ export async function initConsumptionPage() {
                 const mecrForm = document.getElementById('mecr-form');
                 let currentMecrReports = [];
 
-                // --- MFCR (Fuel) Logic ---
-                const mfcrVehicleSelect = document.getElementById('mfcrVehicleSelect');
-                const mfcrContentArea = document.getElementById('mfcr-content-area');
-                const mfcrTableBody = document.getElementById('mfcr-table-body');
-                const mfcrForm = document.getElementById('mfcr-form');
-                let currentMfcrReports = [];
+                // --- Trip Tickets Logic ---
+                const ttVehicleSelect = document.getElementById('ttVehicleSelect');
+                const ttContentArea = document.getElementById('tt-content-area');
+                const ttTableBody = document.getElementById('tt-table-body');
+                const ttForm = document.getElementById('tt-form');
+                let currentTripTickets = [];
 
                 const canWrite = checkPermission('consumption', 'write');
-                [mecrForm, mfcrForm].forEach(form => {
+                [mecrForm, ttForm].forEach(form => {
                     if (form) {
                         const submitBtn = form.querySelector('button[type="submit"]');
                         if (submitBtn) submitBtn.disabled = !canWrite;
@@ -123,58 +123,61 @@ export async function initConsumptionPage() {
         const vehicles = await window.getVehicleList();
         // const currentLguId = getCurrentLguId(); // already defined
                 const filteredVehicles = currentLguId ? vehicles.filter(v => v.lguId === currentLguId || !v.lguId) : vehicles;
-                mfcrVehicleSelect.innerHTML += filteredVehicles.map(v => `<option value="${v.id}">${v.plate_number} - ${v.make} ${v.model}</option>`).join('');
+                ttVehicleSelect.innerHTML += filteredVehicles.map(v => `<option value="${v.id}">${v.plate_number} - ${v.make} ${v.model}</option>`).join('');
                 
-                async function renderMfcrReports(vehicleId) {
-            currentMfcrReports = await window.getMfcrReports(vehicleId);
-                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    mfcrTableBody.innerHTML = currentMfcrReports.length > 0
-                        ? currentMfcrReports.map(r => `<tr>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.reporting_year}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${months[r.reporting_month - 1] || r.reporting_month}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.fuel_consumed_liters}</td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${r.distance_traveled_km || 'N/A'}</td>
+                async function renderTripTickets(vehicleId) {
+            currentTripTickets = await window.getTripTickets(vehicleId);
+                    ttTableBody.innerHTML = currentTripTickets.length > 0
+                        ? currentTripTickets.map(t => `<tr>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${t.date}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${t.driver}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${t.destination}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${t.fuelLiters}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">₱${(t.fuelCost || 0).toLocaleString()}</td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${t.odometerEnd - t.odometerStart}</td>
                         </tr>`).join('')
-                        : '<tr><td colspan="4" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">No reports found.</td></tr>';
+                        : '<tr><td colspan="6" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">No trip tickets found.</td></tr>';
                 }
 
-                mfcrVehicleSelect.addEventListener('change', async () => {
-                    const selectedVehicleId = mfcrVehicleSelect.value;
+                ttVehicleSelect.addEventListener('change', async () => {
+                    const selectedVehicleId = ttVehicleSelect.value;
                     if (selectedVehicleId) {
-                        mfcrContentArea.classList.remove('hidden');
-                        await renderMfcrReports(selectedVehicleId);
+                        ttContentArea.classList.remove('hidden');
+                        await renderTripTickets(selectedVehicleId);
                     } else {
-                        mfcrContentArea.classList.add('hidden');
+                        ttContentArea.classList.add('hidden');
                     }
                 });
 
-                mfcrForm.addEventListener('submit', async (e) => {
+                ttForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const selectedVehicleId = mfcrVehicleSelect.value;
+                    const selectedVehicleId = ttVehicleSelect.value;
                     if (!selectedVehicleId) return alert('Please select a vehicle first.');
 
-                    const year = Number(document.getElementById('mfcr-year').value);
-                    const month = Number(document.getElementById('mfcr-month').value);
+                    const odoStart = Number(document.getElementById('tt-odo-start').value);
+                    const odoEnd = Number(document.getElementById('tt-odo-end').value);
 
-                    // Validation: Check for duplicate
-                    if (currentMfcrReports.some(r => r.reporting_year === year && r.reporting_month === month)) {
-                        alert('A report for this month and year already exists.');
-                        return;
+                    if (odoEnd <= odoStart) {
+                        return alert('Odometer End must be strictly greater than Odometer Start.');
                     }
 
-                    const reportData = {
+                    const ticketData = {
                         vehicleId: selectedVehicleId,
-                        reporting_year: year,
-                        reporting_month: month,
-                        fuel_consumed_liters: Number(document.getElementById('mfcr-liters').value),
-                        distance_traveled_km: Number(document.getElementById('mfcr-distance').value) || null,
+                        date: document.getElementById('tt-date').value,
+                        driver: document.getElementById('tt-driver').value,
+                        destination: document.getElementById('tt-destination').value,
+                        purpose: document.getElementById('tt-purpose').value,
+                        odometerStart: odoStart,
+                        odometerEnd: odoEnd,
+                        fuelLiters: Number(document.getElementById('tt-fuel').value),
+                        fuelCost: Number(document.getElementById('tt-cost').value)
                     };
 
-            if (await window.createMfcrReport(reportData)) {
-                        mfcrForm.reset();
-                        await renderMfcrReports(selectedVehicleId);
+            if (await window.createTripTicket(ticketData)) {
+                        ttForm.reset();
+                        await renderTripTickets(selectedVehicleId);
                     } else {
-                        alert('Error saving fuel report.');
+                        alert('Error saving Trip Ticket.');
                     }
                 });
 }

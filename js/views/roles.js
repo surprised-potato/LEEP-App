@@ -32,7 +32,7 @@ export const ROLE_DEFINITIONS = {
             rios:        { read: true,  write: true },
             ppas:        { read: true,  write: true },
             reporting:   { read: true,  write: true },
-            users:       { read: true,  write: false }, // Can see users in their LGU
+            users:       { read: true,  write: true }, // Can manage users in their LGU
             lgus:        { read: true,  write: false },
             admin:       { read: false, write: false }
         }
@@ -99,4 +99,25 @@ export function getRolePreset(roleName) {
 
 export function getRoleNames() {
     return Object.keys(ROLE_DEFINITIONS);
+}
+
+// Numeric hierarchy — higher number = more privilege
+export const ROLE_HIERARCHY = {
+    'System Admin': 100,
+    'LGU Admin': 50,
+    'LGU EEC Officer': 20,
+    'Auditor': 20,
+    'LGU Planner': 20,
+    'Pending': 0
+};
+
+/**
+ * Returns the list of role names that a user with `currentRole` is allowed to assign.
+ * A user can only assign roles strictly below their own level.
+ */
+export function getAssignableRoles(currentRole) {
+    const myLevel = ROLE_HIERARCHY[currentRole] ?? 0;
+    return Object.entries(ROLE_HIERARCHY)
+        .filter(([, level]) => level < myLevel)
+        .map(([name]) => name);
 }

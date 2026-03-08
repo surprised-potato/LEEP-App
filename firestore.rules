@@ -51,9 +51,18 @@ service cloud.firestore {
       // Registration: Any authenticated user can create their initial profile
       allow create: if isAuthenticated() && request.auth.uid == userId;
       // Updates: Restricted to System Admins or those with 'users' write permission
+      // Additional constraints for non-System Admins:
+      // 1. Cannot modify a System Admin's profile
+      // 2. Cannot elevate a user to 'System Admin'
+      // 3. Must only assign/manage users in their own LGU
       allow update: if isAuthenticated() && (
         isSystemAdmin() ||
-        (isApproved() && getUserData().permissions.get('users', {}).get('write', false) == true)
+        (
+          isApproved() && getUserData().permissions.get('users', {}).get('write', false) == true
+          && resource.data.role != 'System Admin' // Cannot edit an existing System Admin
+          && request.resource.data.role != 'System Admin' // Cannot make someone a System Admin
+          && (request.resource.data.assignedLguId == getUserData().assignedLguId || request.resource.data.assignedLguId == null) // Can only assign to their own LGU or clear it
+        )
       );
       allow delete: if isSystemAdmin();
     }
@@ -66,7 +75,7 @@ service cloud.firestore {
 
     // LGU Management
     match /lgus/{docId} {
-      allow read: if hasModuleRead('lgus');
+      allow read: if isAuthenticated();
       allow write: if hasModuleWrite('lgus');
     }
 
@@ -94,8 +103,14 @@ service cloud.firestore {
       allow write: if hasModuleWrite('consumption');
     }
 
-    // Consumption Reports (Fuel)
+    // Consumption Reports (Fuel - Legacy)
     match /mfcr_reports/{docId} {
+      allow read: if hasModuleRead('consumption');
+      allow write: if hasModuleWrite('consumption');
+    }
+
+    // Trip Tickets (Fuel - New)
+    match /trip_tickets/{docId} {
       allow read: if hasModuleRead('consumption');
       allow write: if hasModuleWrite('consumption');
     }
