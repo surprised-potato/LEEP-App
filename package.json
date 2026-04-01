@@ -1,7 +1,7 @@
 {
   "name": "eepv2t2",
   "version": "1.0.0",
-  "description": "LGU EEC Platform",
+  "description": "Organization EEC Platform",
   "main": "js/app.js",
   "scripts": {
     "test": "jest"

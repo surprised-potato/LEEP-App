@@ -1,4 +1,4 @@
-import { getCurrentLguId, checkPermission } from './state.js';
+import { getCurrentOrganizationId, checkPermission } from './state.js';
 
 // --- Module-level state for search, sort, and data ---
 let fullVehicleList = [];
@@ -106,10 +106,10 @@ export async function renderVehicleList() {
     
     let vehicles = await window.getVehicleList();
 
-    // Filter by Current LGU
-    const currentLguId = getCurrentLguId();
-    if (currentLguId) {
-        fullVehicleList = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
+    // Filter by Current Organization
+    const currentOrganizationId = getCurrentOrganizationId();
+    if (currentOrganizationId) {
+        fullVehicleList = vehicles.filter(v => v.organizationId === currentOrganizationId || !v.organizationId);
     } else {
         fullVehicleList = vehicles;
     }
@@ -188,7 +188,7 @@ export async function initVehicleForm(docId = null) {
                         model: modelField.value,
                         year_model: yearField.value ? Number(yearField.value) : null,
                         fuel_type: fuelField.value,
-                lguId: getCurrentLguId() // Attach current LGU
+                organizationId: getCurrentOrganizationId() // Attach current Organization
                     };
         
                     const id = idField.value;

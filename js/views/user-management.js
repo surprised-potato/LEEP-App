@@ -1,10 +1,10 @@
-import { populateLguSelector } from './ui.js';
+import { populateOrganizationSelector } from './ui.js';
 import { getRolePreset, getAssignableRoles } from './roles.js';
 import { getCurrentUser } from './state.js';
 
 let allUsers = [];
 let selectedUser = null;
-let allLgus = [];
+let allOrganizations = [];
 
 const modules = [
     { id: 'dashboard', name: 'Dashboard' },
@@ -17,22 +17,22 @@ const modules = [
     { id: 'ppas', name: 'Projects (PPA)' },
     { id: 'reporting', name: 'Compliance Report' },
     { id: 'users', name: 'Users' },
-    { id: 'lgus', name: 'LGUs' },
+    { id: 'organizations', name: 'Organizations' },
     { id: 'admin', name: 'Admin Panel' }
 ];
 
 export async function renderUserManagement() {
     const userListContainer = document.getElementById('user-list');
     const searchInput = document.getElementById('user-search');
-    const lguFilter = document.getElementById('user-filter-lgu');
-    const lguAssignSelect = document.getElementById('user-lgu-assign');
+    const organizationFilter = document.getElementById('user-filter-organization');
+    const organizationAssignSelect = document.getElementById('user-organization-assign');
     const roleAssignSelect = document.getElementById('user-role-assign');
     
     // Fetch data and populate selectors
-    const [users, lgus] = await Promise.all([
+    const [users, organizations] = await Promise.all([
         window.getUserList(),
-        populateLguSelector(lguAssignSelect, { 
-            emptyText: 'No LGU Assigned (System Wide)',
+        populateOrganizationSelector(organizationAssignSelect, { 
+            emptyText: 'No Organization Assigned (System Wide)',
             filterByUser: false 
         })
     ]);
@@ -40,15 +40,15 @@ export async function renderUserManagement() {
     const currentUser = getCurrentUser();
     
     allUsers = users;
-    allLgus = lgus;
+    allOrganizations = organizations;
 
     // Filter users: 
     // - Non-System Admins cannot see System Admins.
-    // - LGU-restricted roles can only see users in their LGU (or Pending users with no LGU).
+    // - Organization-restricted roles can only see users in their Organization (or Pending users with no Organization).
     if (currentUser.role !== 'System Admin') {
         allUsers = allUsers.filter(u => u.role !== 'System Admin');
-        if (currentUser.assignedLguId) {
-            allUsers = allUsers.filter(u => !u.assignedLguId || u.assignedLguId === currentUser.assignedLguId);
+        if (currentUser.assignedOrganizationId) {
+            allUsers = allUsers.filter(u => !u.assignedOrganizationId || u.assignedOrganizationId === currentUser.assignedOrganizationId);
         }
     }
 
@@ -60,20 +60,20 @@ export async function renderUserManagement() {
     });
 
     // Also populate the filter if it exists
-    if (lguFilter) {
-        const filterOptions = allLgus.map(lgu => `<option value="${lgu.id}">${lgu.name}</option>`).join('');
-        lguFilter.innerHTML = '<option value="">All LGUs</option><option value="none">No LGU Assigned</option>' + filterOptions;
+    if (organizationFilter) {
+        const filterOptions = allOrganizations.map(organization => `<option value="${organization.id}">${organization.name}</option>`).join('');
+        organizationFilter.innerHTML = '<option value="">All Organizations</option><option value="none">No Organization Assigned</option>' + filterOptions;
     }
     
     const renderList = () => {
         const searchTerm = searchInput.value.toLowerCase();
-        const selectedLgu = lguFilter?.value;
+        const selectedOrganization = organizationFilter?.value;
 
         const filtered = allUsers.filter(u => {
             const matchesSearch = u.displayName?.toLowerCase().includes(searchTerm) || 
                                  u.email?.toLowerCase().includes(searchTerm);
-            const matchesLgu = !selectedLgu || (selectedLgu === 'none' ? !u.assignedLguId : u.assignedLguId === selectedLgu);
-            return matchesSearch && matchesLgu;
+            const matchesOrganization = !selectedOrganization || (selectedOrganization === 'none' ? !u.assignedOrganizationId : u.assignedOrganizationId === selectedOrganization);
+            return matchesSearch && matchesOrganization;
         });
         
         if (filtered.length === 0) {
@@ -103,7 +103,7 @@ export async function renderUserManagement() {
     };
 
     searchInput.addEventListener('input', renderList);
-    lguFilter?.addEventListener('change', renderList);
+    organizationFilter?.addEventListener('change', renderList);
     roleAssignSelect?.addEventListener('change', (e) => onRoleChange(e.target.value));
 
     renderList(); // Initial render
@@ -127,7 +127,7 @@ function selectUser(userId) {
     const nameEl = document.getElementById('selected-user-name');
     const emailEl = document.getElementById('selected-user-email');
     const modulesList = document.getElementById('modules-list');
-    const lguAssignSelect = document.getElementById('user-lgu-assign');
+    const organizationAssignSelect = document.getElementById('user-organization-assign');
     const roleAssignSelect = document.getElementById('user-role-assign');
     const currentUser = getCurrentUser();
 
@@ -150,14 +150,14 @@ function selectUser(userId) {
     
     if (roleAssignSelect) roleAssignSelect.value = selectedUser.role || 'Pending';
     
-    if (lguAssignSelect) {
-        lguAssignSelect.value = selectedUser.assignedLguId || '';
-        // Lock LGU for LGU-restricted admins
-        if (currentUser.assignedLguId) {
-            lguAssignSelect.value = currentUser.assignedLguId;
-            lguAssignSelect.disabled = true;
+    if (organizationAssignSelect) {
+        organizationAssignSelect.value = selectedUser.assignedOrganizationId || '';
+        // Lock Organization for Organization-restricted admins
+        if (currentUser.assignedOrganizationId) {
+            organizationAssignSelect.value = currentUser.assignedOrganizationId;
+            organizationAssignSelect.disabled = true;
         } else {
-            lguAssignSelect.disabled = false;
+            organizationAssignSelect.disabled = false;
         }
     }
 
@@ -209,19 +209,19 @@ async function savePermissions() {
     });
 
     const role = document.getElementById('user-role-assign').value;
-    const assignedLguId = document.getElementById('user-lgu-assign').value || null;
+    const assignedOrganizationId = document.getElementById('user-organization-assign').value || null;
 
-    // Update role, permissions and LGU assignment
+    // Update role, permissions and Organization assignment
     try {
         await window.updateUserRole(selectedUser.id, { 
             role,
             permissions, 
-            assignedLguId 
+            assignedOrganizationId 
         });
 
         selectedUser.role = role;
         selectedUser.permissions = permissions;
-        selectedUser.assignedLguId = assignedLguId;
+        selectedUser.assignedOrganizationId = assignedOrganizationId;
         
         btn.textContent = 'Saved!';
         

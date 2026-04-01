@@ -1,6 +1,6 @@
-# LGU Energy Dashboard (LEEP App)
+# Organization Energy Dashboard (LEEP App)
 
-This is a single-page web application built with HTML5, Vanilla JavaScript (ES6 Modules), TailwindCSS, and Firebase (Firestore & Authentication) to help Local Government Units (LGUs) track and manage energy usage for their facilities and vehicles.
+This is a single-page web application built with HTML5, Vanilla JavaScript (ES6 Modules), TailwindCSS, and Firebase (Firestore & Authentication) to help Organizations (Organizations) track and manage energy usage for their facilities and vehicles.
 
 ## Prerequisites
 

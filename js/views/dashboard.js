@@ -1,4 +1,4 @@
-import { getCurrentLguId, getCurrentLoadId } from './state.js';
+import { getCurrentOrganizationId, getCurrentLoadId } from './state.js';
 
 export async function renderDashboard(loadId) {
                 if (!window.db) {
@@ -22,11 +22,11 @@ export async function renderDashboard(loadId) {
                     let mecrReports = mecrResults.docs.map(doc => doc.data());
                     let tripTickets = mfcrResults.docs.map(doc => doc.data());
 
-                    // Filter Data by LGU
-            const currentLguId = getCurrentLguId();
-                    if (currentLguId) {
-                        buildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
-                        vehicles = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
+                    // Filter Data by Organization
+            const currentOrganizationId = getCurrentOrganizationId();
+                    if (currentOrganizationId) {
+                        buildings = buildings.filter(b => b.organizationId === currentOrganizationId || !b.organizationId);
+                        vehicles = vehicles.filter(v => v.organizationId === currentOrganizationId || !v.organizationId);
                         
                         const allowedBldgIds = new Set(buildings.map(b => b.id));
                         const allowedVehicleIds = new Set(vehicles.map(v => v.id));

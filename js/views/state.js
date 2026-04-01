@@ -3,18 +3,18 @@
 // Ensure localStorage is available (for testing environments)
 const storage = typeof localStorage !== 'undefined' ? localStorage : null;
 
-let currentLguId = storage ? storage.getItem('currentLguId') : null;
+let currentOrganizationId = storage ? storage.getItem('currentOrganizationId') : null;
 let currentLoadId = 0; // Track the latest view load request
 let currentUser = null;
 
-export function getCurrentLguId() {
-    return currentLguId;
+export function getCurrentOrganizationId() {
+    return currentOrganizationId;
 }
 
-export function setCurrentLguId(id) {
-    currentLguId = id;
+export function setCurrentOrganizationId(id) {
+    currentOrganizationId = id;
     if (storage) {
-        storage.setItem('currentLguId', id);
+        storage.setItem('currentOrganizationId', id);
     }
 }
 

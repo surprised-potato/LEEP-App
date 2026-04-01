@@ -12,7 +12,7 @@
 <!-- Tabs -->
 <div class="mb-6 border-b border-gray-200">
     <nav class="-mb-px flex flex-wrap gap-2" aria-label="Tabs">
-        <button class="tab-btn border-b-2 border-blue-500 text-blue-600 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-lgus">LGUs</button>
+        <button class="tab-btn border-b-2 border-blue-500 text-blue-600 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-organizations">Organizations</button>
         <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-fsbds">Buildings</button>
         <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-vehicles">Vehicles</button>
         <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-4 font-medium text-sm" data-target="content-made">Equipment</button>
@@ -36,10 +36,10 @@
 </div>
 
 <div id="adminTabContent" class="bg-white shadow rounded-lg p-4 mb-4">
-    <!-- LGUs -->
-    <div class="tab-content-item block" id="content-lgus">
+    <!-- Organizations -->
+    <div class="tab-content-item block" id="content-organizations">
         <div class="overflow-x-auto">
-            <table class="min-w-full leading-normal" id="table-lgus">
+            <table class="min-w-full leading-normal" id="table-organizations">
                 <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
@@ -49,7 +49,7 @@
     <div class="tab-content-item hidden" id="content-fsbds">
         <div class="overflow-x-auto">
             <table class="min-w-full leading-normal" id="table-fsbds">
-                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (LGU)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (Organization)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -58,7 +58,7 @@
     <div class="tab-content-item hidden" id="content-vehicles">
         <div class="overflow-x-auto">
             <table class="min-w-full leading-normal" id="table-vehicles">
-                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name (Plate)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (LGU)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
+                <thead><tr><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name (Plate)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent (Organization)</th><th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -115,7 +115,7 @@
                 <thead>
                     <tr>
                         <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User</th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Assigned LGU</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Assigned Organization</th>
                         <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
@@ -130,9 +130,9 @@
             <p class="text-sm text-gray-600 mb-6">Set the initial access levels for newly registered users.</p>
             
             <div class="mb-8 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                <label for="default-lgu-selector" class="block text-sm font-bold text-blue-800 mb-2">Default LGU for New Users</label>
-                <p class="text-xs text-blue-600 mb-3">New users will be automatically assigned to this LGU upon registration.</p>
-                <select id="default-lgu-selector" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm"></select>
+                <label for="default-organization-selector" class="block text-sm font-bold text-blue-800 mb-2">Default Organization for New Users</label>
+                <p class="text-xs text-blue-600 mb-3">New users will be automatically assigned to this Organization upon registration.</p>
+                <select id="default-organization-selector" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm"></select>
             </div>
 
             <div class="bg-gray-50 rounded-lg p-4 mb-6">

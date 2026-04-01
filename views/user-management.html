@@ -9,9 +9,9 @@
         <div class="w-1/3 border-r border-gray-200 flex flex-col">
             <div class="p-4 border-b border-gray-100 space-y-2">
                 <input type="text" id="user-search" placeholder="Search users..." class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                <select id="user-filter-lgu" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm">
-                    <option value="">All LGUs</option>
-                    <option value="none">No LGU Assigned</option>
+                <select id="user-filter-organization" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm">
+                    <option value="">All Organizations</option>
+                    <option value="none">No Organization Assigned</option>
                 </select>
             </div>
             <div id="user-list" class="flex-1 overflow-y-auto">
@@ -36,18 +36,18 @@
                 <select id="user-role-assign" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none bg-white">
                     <option value="Pending">Pending (No Access)</option>
                     <option value="System Admin">System Admin</option>
-                    <option value="LGU Admin">LGU Admin</option>
-                    <option value="LGU EEC Officer">LGU EEC Officer</option>
+                    <option value="Organization Admin">Organization Admin</option>
+                    <option value="Organization EEC Officer">Organization EEC Officer</option>
                     <option value="Auditor">Auditor</option>
-                    <option value="LGU Planner">LGU Planner</option>
+                    <option value="Organization Planner">Organization Planner</option>
                 </select>
             </div>
 
             <div class="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-100">
-                <h4 class="font-semibold text-blue-800 mb-2">LGU Assignment</h4>
-                <p class="text-xs text-blue-600 mb-3">Assign this user to a specific LGU to restrict their data scope.</p>
-                <select id="user-lgu-assign" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                    <option value="">No LGU Assigned (System Wide)</option>
+                <h4 class="font-semibold text-blue-800 mb-2">Organization Assignment</h4>
+                <p class="text-xs text-blue-600 mb-3">Assign this user to a specific Organization to restrict their data scope.</p>
+                <select id="user-organization-assign" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    <option value="">No Organization Assigned (System Wide)</option>
                 </select>
             </div>
 

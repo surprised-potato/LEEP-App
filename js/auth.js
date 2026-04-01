@@ -60,7 +60,7 @@ export async function createSystemAdmin(displayName, email, password) {
             email: user.email,
             displayName: displayName,
             role: 'System Admin',
-            assignedLguId: null, // System Admin is not tied to one LGU
+            assignedOrganizationId: null, // System Admin is not tied to one Organization
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 

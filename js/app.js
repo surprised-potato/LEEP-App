@@ -1,5 +1,5 @@
-import { getCurrentLguId, setCurrentLguId, getNextLoadId, getCurrentLoadId, setCurrentUser, getCurrentUser } from './views/state.js';
-import { applyHeroHeader, initManualAccordion, populateLguSelector, updateSidebarVisibility } from './views/ui.js';
+import { getCurrentOrganizationId, setCurrentOrganizationId, getNextLoadId, getCurrentLoadId, setCurrentUser, getCurrentUser } from './views/state.js';
+import { applyHeroHeader, initManualAccordion, populateOrganizationSelector, updateSidebarVisibility } from './views/ui.js';
 import { handleRouting } from './router.js';
 import { loginWithGoogle, logout } from './auth.js';
 
@@ -31,48 +31,48 @@ window.showToast = (message, type = 'success') => {
 
 // --- FUNCTIONS ---
 
-export async function initLguSelector() {
+export async function initOrganizationSelector() {
     if (typeof document !== 'undefined') {
-        const selector = document.getElementById('lgu-selector');
-        const headerLguName = document.getElementById('header-lgu-name');
-        const lgus = await populateLguSelector(selector, { includeEmpty: false });
+        const selector = document.getElementById('organization-selector');
+        const headerOrganizationName = document.getElementById('header-organization-name');
+        const organizations = await populateOrganizationSelector(selector, { includeEmpty: false });
 
-        if (lgus.length > 0) {
+        if (organizations.length > 0) {
             const user = getCurrentUser();
             
-            if (user && user.assignedLguId) {
-                // User is restricted to a specific LGU
-                setCurrentLguId(user.assignedLguId);
-                if (selector) selector.value = user.assignedLguId;
+            if (user && user.assignedOrganizationId) {
+                // User is restricted to a specific Organization
+                setCurrentOrganizationId(user.assignedOrganizationId);
+                if (selector) selector.value = user.assignedOrganizationId;
                 if (selector) selector.disabled = true;
             } else {
                 if (selector) selector.disabled = false;
-                if (getCurrentLguId() && lgus.find(l => l.id === getCurrentLguId())) {
-                    if (selector) selector.value = getCurrentLguId();
+                if (getCurrentOrganizationId() && organizations.find(l => l.id === getCurrentOrganizationId())) {
+                    if (selector) selector.value = getCurrentOrganizationId();
                 } else {
-                    setCurrentLguId(lgus[0].id);
-                    if (selector) selector.value = getCurrentLguId();
+                    setCurrentOrganizationId(organizations[0].id);
+                    if (selector) selector.value = getCurrentOrganizationId();
                 }
             }
 
             const updateHeaderText = () => {
-                if (headerLguName) {
-                    const selected = lgus.find(l => l.id === getCurrentLguId());
-                    headerLguName.textContent = selected ? selected.name : 'Select LGU';
+                if (headerOrganizationName) {
+                    const selected = organizations.find(l => l.id === getCurrentOrganizationId());
+                    headerOrganizationName.textContent = selected ? selected.name : 'Select Organization';
                 }
             };
             updateHeaderText();
             
             if (selector) {
                 selector.addEventListener('change', (e) => {
-                    setCurrentLguId(e.target.value);
+                    setCurrentOrganizationId(e.target.value);
                     updateHeaderText();
                     handleRouting(); // Reload current view with new filter
                 });
             }
         } else {
-            selector.innerHTML = '<option value="">No LGUs Found</option>';
-            if (headerLguName) headerLguName.textContent = 'No LGUs Found';
+            selector.innerHTML = '<option value="">No Organizations Found</option>';
+            if (headerOrganizationName) headerOrganizationName.textContent = 'No Organizations Found';
         }
     }
 }
@@ -168,7 +168,7 @@ export function initAuth() {
 
             // Initialize app components
             updateSidebarVisibility();
-            await initLguSelector();
+            await initOrganizationSelector();
             handleRouting();
         } else {
             // User is signed out
@@ -186,7 +186,7 @@ async function showRegistrationScreen(user) {
     await loadContent('views/register.html', async () => {
         const nameInput = document.getElementById('register-name');
         const emailInput = document.getElementById('register-email');
-        const lguSelect = document.getElementById('register-lgu-select');
+        const organizationSelect = document.getElementById('register-organization-select');
         const logoutBtn = document.getElementById('btn-register-logout');
         const form = document.getElementById('registration-form');
 
@@ -194,9 +194,9 @@ async function showRegistrationScreen(user) {
         if (emailInput) emailInput.value = user.email || '';
         if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
-        await populateLguSelector(lguSelect, { 
+        await populateOrganizationSelector(organizationSelect, { 
             includeEmpty: true, 
-            emptyText: 'Select your LGU...',
+            emptyText: 'Select your Organization...',
             filterByUser: false 
         });
 
@@ -216,7 +216,7 @@ async function showRegistrationScreen(user) {
                 btn.textContent = 'Submitting...';
 
                 const formData = {
-                    lguId: lguSelect.value,
+                    organizationId: organizationSelect.value,
                     position: document.getElementById('register-position').value,
                     contactNumber: document.getElementById('register-contact').value,
                     dpaConsent: true
@@ -231,14 +231,14 @@ async function showRegistrationScreen(user) {
 async function createUserProfile(user, formData) {
     try {
         const defaults = await window.getDefaultPermissions();
-        const { defaultLguId, ...modulePerms } = defaults || {};
+        const { defaultOrganizationId, ...modulePerms } = defaults || {};
 
         const userData = {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
             role: 'Pending',
-            assignedLguId: formData.lguId || null,
+            assignedOrganizationId: formData.organizationId || null,
             position: formData.position || '',
             contactNumber: formData.contactNumber || '',
             permissions: modulePerms || {},
@@ -275,5 +275,5 @@ async function showPendingScreen() {
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('hashchange', handleRouting);
-    initAuth(); // Initialize Auth which will trigger LGU selector and Routing
+    initAuth(); // Initialize Auth which will trigger Organization selector and Routing
 });

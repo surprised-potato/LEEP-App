@@ -2,7 +2,7 @@
     <div class="bg-white shadow-2xl rounded-3xl overflow-hidden border border-gray-100">
         <div class="hero-header px-8 py-10 text-white">
             <h2 class="text-3xl font-extrabold mb-2">Complete Your Registration</h2>
-            <p class="text-blue-100 opacity-90">Please provide your details and select your target LGU to request access.</p>
+            <p class="text-blue-100 opacity-90">Please provide your details and select your target Organization to request access.</p>
         </div>
         
         <form id="registration-form" class="p-8 space-y-6">
@@ -18,10 +18,10 @@
             </div>
 
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Target LGU</label>
-                <p class="text-xs text-gray-500 mb-3 italic">Select the LGU you are officially representing. Your access will be scoped to this entity.</p>
-                <select id="register-lgu-select" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm" required>
-                    <option value="">Loading LGUs...</option>
+                <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Target Organization</label>
+                <p class="text-xs text-gray-500 mb-3 italic">Select the Organization you are officially representing. Your access will be scoped to this entity.</p>
+                <select id="register-organization-select" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm" required>
+                    <option value="">Loading Organizations...</option>
                 </select>
             </div>
 
@@ -44,7 +44,7 @@
                     <div class="ml-4 text-sm">
                         <label for="register-dpa-consent" class="font-bold text-gray-800 cursor-pointer">Data Privacy Consent</label>
                         <p class="text-gray-600 mt-1 leading-relaxed">
-                            I hereby agree to the <a href="#" class="text-blue-600 hover:underline font-semibold" onclick="event.preventDefault(); alert('The LEEP Local Energy Efficiency Program collects your name, email, and contact details solely for account verification and LGU-level access control. We comply with the Data Privacy Act of 2012 (RA 10173).');">LEEP Data Privacy Notice</a>. 
+                            I hereby agree to the <a href="#" class="text-blue-600 hover:underline font-semibold" onclick="event.preventDefault(); alert('The LEEP Local Energy Efficiency Program collects your name, email, and contact details solely for account verification and Organization-level access control. We comply with the Data Privacy Act of 2012 (RA 10173).');">LEEP Data Privacy Notice</a>. 
                             I understand that my personal information will be used solely for the purpose of granting access to the LEEP platform and will be protected accordingly.
                         </p>
                     </div>

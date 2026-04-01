@@ -2,8 +2,8 @@
 
 export const ROLE_DEFINITIONS = {
     'System Admin': {
-        description: 'Full system access across all LGUs',
-        lguRestricted: false,
+        description: 'Full system access across all Organizations',
+        organizationRestricted: false,
         permissions: {
             dashboard:   { read: true,  write: true },
             fsbds:       { read: true,  write: true },
@@ -15,13 +15,13 @@ export const ROLE_DEFINITIONS = {
             ppas:        { read: true,  write: true },
             reporting:   { read: true,  write: true },
             users:       { read: true,  write: true },
-            lgus:        { read: true,  write: true },
+            organizations:        { read: true,  write: true },
             admin:       { read: true,  write: true }
         }
     },
-    'LGU Admin': {
-        description: 'Full access scoped to assigned LGU',
-        lguRestricted: true,
+    'Organization Admin': {
+        description: 'Full access scoped to assigned Organization',
+        organizationRestricted: true,
         permissions: {
             dashboard:   { read: true,  write: true },
             fsbds:       { read: true,  write: true },
@@ -32,14 +32,14 @@ export const ROLE_DEFINITIONS = {
             rios:        { read: true,  write: true },
             ppas:        { read: true,  write: true },
             reporting:   { read: true,  write: true },
-            users:       { read: true,  write: true }, // Can manage users in their LGU
-            lgus:        { read: true,  write: false },
+            users:       { read: true,  write: true }, // Can manage users in their Organization
+            organizations:        { read: true,  write: false },
             admin:       { read: false, write: false }
         }
     },
-    'LGU EEC Officer': {
+    'Organization EEC Officer': {
         description: 'Data entry for assets and consumption',
-        lguRestricted: true,
+        organizationRestricted: true,
         permissions: {
             dashboard:   { read: true,  write: false },
             fsbds:       { read: true,  write: true },
@@ -51,13 +51,13 @@ export const ROLE_DEFINITIONS = {
             ppas:        { read: true,  write: false },
             reporting:   { read: true,  write: false },
             users:       { read: false, write: false },
-            lgus:        { read: false, write: false },
+            organizations:        { read: false, write: false },
             admin:       { read: false, write: false }
         }
     },
     'Auditor': {
-        description: 'Cross-LGU read access, can create RIOs',
-        lguRestricted: false,
+        description: 'Cross-Organization read access, can create RIOs',
+        organizationRestricted: false,
         permissions: {
             dashboard:   { read: true,  write: false },
             fsbds:       { read: true,  write: false },
@@ -69,13 +69,13 @@ export const ROLE_DEFINITIONS = {
             ppas:        { read: true,  write: false },
             reporting:   { read: true,  write: false },
             users:       { read: false, write: false },
-            lgus:        { read: false, write: false },
+            organizations:        { read: false, write: false },
             admin:       { read: false, write: false }
         }
     },
-    'LGU Planner': {
+    'Organization Planner': {
         description: 'Can view data and manage PPAs',
-        lguRestricted: true,
+        organizationRestricted: true,
         permissions: {
             dashboard:   { read: true,  write: false },
             fsbds:       { read: true,  write: false },
@@ -87,7 +87,7 @@ export const ROLE_DEFINITIONS = {
             ppas:        { read: true,  write: true },
             reporting:   { read: true,  write: false },
             users:       { read: false, write: false },
-            lgus:        { read: false, write: false },
+            organizations:        { read: false, write: false },
             admin:       { read: false, write: false }
         }
     }
@@ -104,10 +104,10 @@ export function getRoleNames() {
 // Numeric hierarchy — higher number = more privilege
 export const ROLE_HIERARCHY = {
     'System Admin': 100,
-    'LGU Admin': 50,
-    'LGU EEC Officer': 20,
+    'Organization Admin': 50,
+    'Organization EEC Officer': 20,
     'Auditor': 20,
-    'LGU Planner': 20,
+    'Organization Planner': 20,
     'Pending': 0
 };
 

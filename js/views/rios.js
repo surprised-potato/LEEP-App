@@ -1,4 +1,4 @@
-import { getCurrentLguId, checkPermission } from './state.js';
+import { getCurrentOrganizationId, checkPermission } from './state.js';
 import { openAssetDetailsModal } from './ui.js';
 
 // --- Module-level state for search, sort, and data ---
@@ -129,11 +129,11 @@ export async function renderRioList() {
         addBtn.classList.toggle('hidden', !canWrite);
     }
             
-    // Filter Assets by LGU
-    const currentLguId = getCurrentLguId();
-    if (currentLguId) {
-        buildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
-        vehicles = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
+    // Filter Assets by Organization
+    const currentOrganizationId = getCurrentOrganizationId();
+    if (currentOrganizationId) {
+        buildings = buildings.filter(b => b.organizationId === currentOrganizationId || !b.organizationId);
+        vehicles = vehicles.filter(v => v.organizationId === currentOrganizationId || !v.organizationId);
     }
 
     const allowedBuildingIds = new Set(buildings.map(b => b.id));
@@ -250,16 +250,16 @@ export async function initRioForm(docId = null) {
                     const type = assetTypeField.value;
                     assetIdField.innerHTML = '<option value="">Loading...</option>';
                     assetIdField.disabled = true;
-                    const currentLguId = getCurrentLguId();
+                    const currentOrganizationId = getCurrentOrganizationId();
                     if (type === 'building') {
                 const buildings = await window.getFsbdList();
-                        const filtered = currentLguId ? buildings.filter(b => b.lguId === currentLguId || !b.lguId) : buildings;
+                        const filtered = currentOrganizationId ? buildings.filter(b => b.organizationId === currentOrganizationId || !b.organizationId) : buildings;
                         assetIdField.innerHTML = filtered.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
                         assetIdField.disabled = false;
                         if (filtered.length > 0) assetIdField.value = filtered[0].id;
                     } else if (type === 'vehicle') {
                 const vehicles = await window.getVehicleList();
-                        const filtered = currentLguId ? vehicles.filter(v => v.lguId === currentLguId || !v.lguId) : vehicles;
+                        const filtered = currentOrganizationId ? vehicles.filter(v => v.organizationId === currentOrganizationId || !v.organizationId) : vehicles;
                         assetIdField.innerHTML = filtered.map(v => `<option value="${v.id}">${v.plate_number}</option>`).join('');
                         assetIdField.disabled = false;
                         if (filtered.length > 0) assetIdField.value = filtered[0].id;
@@ -364,9 +364,9 @@ export async function initRioForm(docId = null) {
                                 assets = await window.getVehicleList();
                             }
                             
-                            const currentLguId = getCurrentLguId();
-                            if (currentLguId) {
-                                assets = assets.filter(a => a.lguId === currentLguId || !a.lguId);
+                            const currentOrganizationId = getCurrentOrganizationId();
+                            if (currentOrganizationId) {
+                                assets = assets.filter(a => a.organizationId === currentOrganizationId || !a.organizationId);
                             }
                             
                             assetIdField.innerHTML = assets.map(a => `<option value="${a.id}">${a.name || a.plate_number}</option>`).join('');
@@ -416,14 +416,14 @@ export async function renderRioContext(container, assetId = null, assetType = nu
             window.getSeuList()
         ]);
 
-        // Filter by LGU
+        // Filter by Organization
         let filteredBuildings = buildings;
         let filteredVehicles = vehicles;
         
-        const currentLguId = getCurrentLguId();
-        if (currentLguId) {
-            filteredBuildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
-            filteredVehicles = vehicles.filter(v => v.lguId === currentLguId || !v.lguId);
+        const currentOrganizationId = getCurrentOrganizationId();
+        if (currentOrganizationId) {
+            filteredBuildings = buildings.filter(b => b.organizationId === currentOrganizationId || !b.organizationId);
+            filteredVehicles = vehicles.filter(v => v.organizationId === currentOrganizationId || !v.organizationId);
         }
 
         const bldgIds = new Set(filteredBuildings.map(b => b.id));

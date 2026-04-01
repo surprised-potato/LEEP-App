@@ -1,4 +1,4 @@
-import { getCurrentLguId, checkPermission } from './state.js';
+import { getCurrentOrganizationId, checkPermission } from './state.js';
 
 export async function initConsumptionPage() {
                 // Helper to populate Year and Month dropdowns
@@ -65,8 +65,8 @@ export async function initConsumptionPage() {
                 });
 
         const buildings = await window.getFsbdList();
-        const currentLguId = getCurrentLguId();
-                const filteredBuildings = currentLguId ? buildings.filter(b => b.lguId === currentLguId || !b.lguId) : buildings;
+        const currentOrganizationId = getCurrentOrganizationId();
+                const filteredBuildings = currentOrganizationId ? buildings.filter(b => b.organizationId === currentOrganizationId || !b.organizationId) : buildings;
                 mecrBuildingSelect.innerHTML += filteredBuildings.map(bldg => `<option value="${bldg.id}">${bldg.name}</option>`).join('');
 
                 async function renderMecrReports(buildingId) {
@@ -121,8 +121,8 @@ export async function initConsumptionPage() {
                 });
 
         const vehicles = await window.getVehicleList();
-        // const currentLguId = getCurrentLguId(); // already defined
-                const filteredVehicles = currentLguId ? vehicles.filter(v => v.lguId === currentLguId || !v.lguId) : vehicles;
+        // const currentOrganizationId = getCurrentOrganizationId(); // already defined
+                const filteredVehicles = currentOrganizationId ? vehicles.filter(v => v.organizationId === currentOrganizationId || !v.organizationId) : vehicles;
                 ttVehicleSelect.innerHTML += filteredVehicles.map(v => `<option value="${v.id}">${v.plate_number} - ${v.make} ${v.model}</option>`).join('');
                 
                 async function renderTripTickets(vehicleId) {

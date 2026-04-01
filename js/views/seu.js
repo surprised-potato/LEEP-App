@@ -1,13 +1,13 @@
-import { getCurrentLguId, checkPermission } from './state.js';
+import { getCurrentOrganizationId, checkPermission } from './state.js';
 import { openFormModal } from './ui.js';
 
 export async function renderSeuPage() {
                 const seuTableBody = document.getElementById('seu-table-body');
                 const equipTableBody = document.getElementById('analysis-equipment-body');
                 const vehicleTableBody = document.getElementById('analysis-vehicle-body');
-        const currentLguId = getCurrentLguId();
-                if (!currentLguId) {
-                    seuTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">Please select an LGU first.</td></tr>';
+        const currentOrganizationId = getCurrentOrganizationId();
+                if (!currentOrganizationId) {
+                    seuTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">Please select an Organization first.</td></tr>';
                     return;
                 }
 
@@ -18,7 +18,7 @@ export async function renderSeuPage() {
                 }
 
                 try {
-                    const [lguSeus, buildings, vehicles, madeList, mfcrSnap, mecrSnap, ttSnap] = await Promise.all([
+                    const [organizationSeus, buildings, vehicles, madeList, mfcrSnap, mecrSnap, ttSnap] = await Promise.all([
                 window.getSeuList(),
                 window.getFsbdList(),
                 window.getVehicleList(),
@@ -28,19 +28,19 @@ export async function renderSeuPage() {
                         window.db.collection('trip_tickets').get()
                     ]);
 
-                    // Filter by LGU
-                    const lguBuildings = buildings.filter(b => b.lguId === currentLguId);
-                    const lguVehicles = vehicles.filter(v => v.lguId === currentLguId);
-                    const bldgIds = new Set(lguBuildings.map(b => b.id));
-                    const vehIds = new Set(lguVehicles.map(v => v.id));
+                    // Filter by Organization
+                    const organizationBuildings = buildings.filter(b => b.organizationId === currentOrganizationId);
+                    const organizationVehicles = vehicles.filter(v => v.organizationId === currentOrganizationId);
+                    const bldgIds = new Set(organizationBuildings.map(b => b.id));
+                    const vehIds = new Set(organizationVehicles.map(v => v.id));
 
                     // Filter SEUs
-                    const filteredSeus = lguSeus.filter(s => bldgIds.has(s.fsbdId) || vehIds.has(s.vehicleId));
+                    const filteredSeus = organizationSeus.filter(s => bldgIds.has(s.fsbdId) || vehIds.has(s.vehicleId));
 
                     // Render Registered SEUs
                     if (filteredSeus.length > 0) {
                         seuTableBody.innerHTML = filteredSeus.map(s => {
-                            const assetName = s.fsbdId ? (lguBuildings.find(b => b.id === s.fsbdId)?.name || 'Unknown Bldg') : (lguVehicles.find(v => v.id === s.vehicleId)?.plate_number || 'Unknown Vehicle');
+                            const assetName = s.fsbdId ? (organizationBuildings.find(b => b.id === s.fsbdId)?.name || 'Unknown Bldg') : (organizationVehicles.find(v => v.id === s.vehicleId)?.plate_number || 'Unknown Vehicle');
                             return `
                                 <tr>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm font-medium">${assetName}</td>
@@ -86,11 +86,11 @@ export async function renderSeuPage() {
                     ];
 
                     const assetCosts = [];
-                    lguBuildings.forEach(b => {
+                    organizationBuildings.forEach(b => {
                         const cost = mecr.filter(r => r.fsbdId === b.id).reduce((sum, r) => sum + (Number(r.cost_php) || 0), 0);
                         if(cost > 0) assetCosts.push({ name: b.name, cost, type: 'Building' });
                     });
-                    lguVehicles.forEach(v => {
+                    organizationVehicles.forEach(v => {
                         const cost = fuelReports.filter(r => r.vehicleId === v.id).reduce((sum, r) => sum + (Number(r.cost_php) || 0), 0);
                         if(cost > 0) assetCosts.push({ name: v.plate_number, cost, type: 'Vehicle' });
                     });
@@ -115,14 +115,14 @@ export async function renderSeuPage() {
                     }
 
                     // --- Equipment Analysis (Calculated) ---
-                    const lguMade = madeList.filter(m => bldgIds.has(m.fsbdId));
-                    const calculatedMade = lguMade.map(m => ({
+                    const organizationMade = madeList.filter(m => bldgIds.has(m.fsbdId));
+                    const calculatedMade = organizationMade.map(m => ({
                         ...m,
                         est_monthly_kwh: (m.power_rating_kw || 0) * (m.time_of_use_hours_per_day || 0) * 30 // Assuming 30 days
                     })).sort((a, b) => b.est_monthly_kwh - a.est_monthly_kwh).slice(0, 10); // Top 10
 
                     equipTableBody.innerHTML = calculatedMade.map(m => {
-                        const bldg = lguBuildings.find(b => b.id === m.fsbdId);
+                        const bldg = organizationBuildings.find(b => b.id === m.fsbdId);
                         return `
                             <tr>
                                 <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm">
@@ -140,7 +140,7 @@ export async function renderSeuPage() {
                     }).join('') || '<tr><td colspan="3" class="text-center py-2 text-gray-500">No equipment data found.</td></tr>';
 
                     // --- Vehicle Analysis (Historical & Active) ---
-                    const vehicleStats = lguVehicles.map(v => {
+                    const vehicleStats = organizationVehicles.map(v => {
                         const reports = fuelReports.filter(r => r.vehicleId === v.id);
                         const totalFuel = reports.reduce((sum, r) => sum + (Number(r.fuel_consumed_liters) || 0), 0);
                         // For trip tickets, we treat them as individual data points. 
@@ -225,12 +225,12 @@ export async function renderSeuPage() {
                     if (createBtn) {
                         createBtn.addEventListener('click', async () => {
                             const assets = [
-                                ...lguBuildings.map(b => ({ id: b.id, name: `Building: ${b.name}`, type: 'building' })),
-                                ...lguVehicles.map(v => ({ id: v.id, name: `Vehicle: ${v.plate_number}`, type: 'vehicle' }))
+                                ...organizationBuildings.map(b => ({ id: b.id, name: `Building: ${b.name}`, type: 'building' })),
+                                ...organizationVehicles.map(v => ({ id: v.id, name: `Vehicle: ${v.plate_number}`, type: 'vehicle' }))
                             ];
 
                             if (assets.length === 0) {
-                                return alert('No buildings or vehicles found for the current LGU. Please add an asset first.');
+                                return alert('No buildings or vehicles found for the current Organization. Please add an asset first.');
                             }
 
                             const assetOptions = assets.map(a => ({

@@ -1,4 +1,4 @@
-import { getCurrentLguId } from './state.js';
+import { getCurrentOrganizationId } from './state.js';
 
 export async function renderReporting() {
                 const container = document.getElementById('report-container');
@@ -7,7 +7,7 @@ export async function renderReporting() {
                 if (printBtn) {
                     printBtn.addEventListener('click', () => window.print());
                 }
-        const currentLguId = getCurrentLguId();
+        const currentOrganizationId = getCurrentOrganizationId();
         const startDateInput = document.getElementById('report-start-date');
         const endDateInput = document.getElementById('report-end-date');
         const generateBtn = document.getElementById('btn-generate-report');
@@ -16,8 +16,8 @@ export async function renderReporting() {
         let filterEndDate = null;
 
         const loadReportData = async () => {
-            if (!currentLguId) {
-                container.innerHTML = '<p class="text-red-500 text-center">Please select an LGU first.</p>';
+            if (!currentOrganizationId) {
+                container.innerHTML = '<p class="text-red-500 text-center">Please select an Organization first.</p>';
                 return;
             }
 
@@ -25,8 +25,8 @@ export async function renderReporting() {
 
             try {
                 // Fetch Data
-                    const [lgu, buildings, vehicles, rios, ppas, allMecr, allTrips, allSeu] = await Promise.all([
-                window.getLguById(currentLguId),
+                    const [organization, buildings, vehicles, rios, ppas, allMecr, allTrips, allSeu] = await Promise.all([
+                window.getOrganizationById(currentOrganizationId),
                 window.getFsbdList(),
                 window.getVehicleList(),
                 window.getRioList(),
@@ -37,17 +37,17 @@ export async function renderReporting() {
                     ]);
 
                     // Filter Data
-                    const lguBuildings = buildings.filter(b => b.lguId === currentLguId);
-                    const lguVehicles = vehicles.filter(v => v.lguId === currentLguId);
+                    const organizationBuildings = buildings.filter(b => b.organizationId === currentOrganizationId);
+                    const organizationVehicles = vehicles.filter(v => v.organizationId === currentOrganizationId);
                     
-                    const bldgIds = new Set(lguBuildings.map(b => b.id));
-                    const vehIds = new Set(lguVehicles.map(v => v.id));
+                    const bldgIds = new Set(organizationBuildings.map(b => b.id));
+                    const vehIds = new Set(organizationVehicles.map(v => v.id));
 
-                    const lguRios = rios.filter(r => bldgIds.has(r.fsbdId) || vehIds.has(r.vehicleId));
+                    const organizationRios = rios.filter(r => bldgIds.has(r.fsbdId) || vehIds.has(r.vehicleId));
                     
                     // Filter PPAs based on RIOs
-                    const rioIds = new Set(lguRios.map(r => r.id));
-                    const lguPpas = ppas.filter(p => p.relatedRioIds && p.relatedRioIds.some(id => rioIds.has(id)));
+                    const rioIds = new Set(organizationRios.map(r => r.id));
+                    const organizationPpas = ppas.filter(p => p.relatedRioIds && p.relatedRioIds.some(id => rioIds.has(id)));
 
                     let mecr = allMecr.filter(r => bldgIds.has(r.fsbdId));
                     let rawTripTickets = allTrips.filter(r => vehIds.has(r.vehicleId));
@@ -92,7 +92,7 @@ export async function renderReporting() {
                         mfcrMap[key].cost_php += Number(t.fuelCost) || 0;
                     });
                     const mfcr = Object.values(mfcrMap);
-                    const lguSeus = allSeu.filter(s => bldgIds.has(s.fsbdId) || vehIds.has(s.vehicleId));
+                    const organizationSeus = allSeu.filter(s => bldgIds.has(s.fsbdId) || vehIds.has(s.vehicleId));
 
                     // Calculations
                     const totalElectricity = mecr.reduce((sum, r) => sum + (Number(r.electricity_consumption_kwh) || 0), 0);
@@ -170,7 +170,7 @@ export async function renderReporting() {
 
                     // 1. Shares (Pie Charts)
                     const elecShareRaw = aggregateForCharts(
-                        lguBuildings, 
+                        organizationBuildings, 
                         b => mecr.filter(r => r.fsbdId === b.id).reduce((sum, r) => sum + (Number(r.electricity_consumption_kwh)||0), 0),
                         b => b.name,
                         true
@@ -180,7 +180,7 @@ export async function renderReporting() {
                     const topBuildings = elecShareRaw.finalItems;
 
                     const fuelShareRaw = aggregateForCharts(
-                        lguVehicles,
+                        organizationVehicles,
                         v => mfcr.filter(r => r.vehicleId === v.id).reduce((sum, r) => sum + (Number(r.fuel_consumed_liters)||0), 0),
                         v => v.plate_number,
                         true
@@ -234,22 +234,22 @@ export async function renderReporting() {
 
                     // 3. Statuses (Doughnut/Bar)
                     const rioStatuses = ['Identified', 'Planned', 'In Progress', 'Completed', 'Implemented'];
-                    const rioStatusData = rioStatuses.map(s => lguRios.filter(r => r.status === s).length);
+                    const rioStatusData = rioStatuses.map(s => organizationRios.filter(r => r.status === s).length);
                     
                     const ppaStatuses = ['Planned', 'Ongoing', 'Completed'];
-                    const ppaStatusData = ppaStatuses.map(s => lguPpas.filter(p => p.status === s).length);
+                    const ppaStatusData = ppaStatuses.map(s => organizationPpas.filter(p => p.status === s).length);
 
                     // 4. Financials (Bar Charts)
                     const rioPriorities = ['High', 'Medium', 'Low'];
-                    const rioCostByPriority = rioPriorities.map(p => lguRios.filter(r => r.priority === p).reduce((sum, r) => sum + (r.estimated_cost_php || 0), 0));
-                    const rioSavingsByPriority = rioPriorities.map(p => lguRios.filter(r => r.priority === p).reduce((sum, r) => sum + (r.estimated_savings_php || 0), 0));
+                    const rioCostByPriority = rioPriorities.map(p => organizationRios.filter(r => r.priority === p).reduce((sum, r) => sum + (r.estimated_cost_php || 0), 0));
+                    const rioSavingsByPriority = rioPriorities.map(p => organizationRios.filter(r => r.priority === p).reduce((sum, r) => sum + (r.estimated_savings_php || 0), 0));
 
-                    const ppaEstCostByStatus = ppaStatuses.map(s => lguPpas.filter(p => p.status === s).reduce((sum, p) => sum + (p.estimated_cost_php || 0), 0));
-                    const ppaActualCostByStatus = ppaStatuses.map(s => lguPpas.filter(p => p.status === s).reduce((sum, p) => sum + (p.actual_cost_php || 0), 0));
+                    const ppaEstCostByStatus = ppaStatuses.map(s => organizationPpas.filter(p => p.status === s).reduce((sum, p) => sum + (p.estimated_cost_php || 0), 0));
+                    const ppaActualCostByStatus = ppaStatuses.map(s => organizationPpas.filter(p => p.status === s).reduce((sum, p) => sum + (p.actual_cost_php || 0), 0));
 
                     // 5. SEU Distribution
                     const seuCategories = {};
-                    lguSeus.forEach(s => {
+                    organizationSeus.forEach(s => {
                         const cat = s.energy_use_category || 'Uncategorized';
                         seuCategories[cat] = (seuCategories[cat] || 0) + 1;
                     });
@@ -290,8 +290,8 @@ export async function renderReporting() {
                                 </div>
                                 
                                 <div class="mb-16 flex-grow flex flex-col justify-center">
-                                    <h3 class="text-5xl font-bold text-blue-900 mb-4">${lgu.name || 'LGU Name'}</h3>
-                                    <p class="text-xl text-gray-600">${lgu.region || ''}, ${lgu.province || ''}</p>
+                                    <h3 class="text-5xl font-bold text-blue-900 mb-4">${organization.name || 'Organization Name'}</h3>
+                                    <p class="text-xl text-gray-600">${organization.region || ''}, ${organization.province || ''}</p>
                                 </div>
 
                                 <div class="mt-auto mb-20 text-center">
@@ -310,14 +310,14 @@ export async function renderReporting() {
                                 
                                 <div class="grid grid-cols-2 gap-6 text-md mb-8">
                                     <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                                        <p class="text-sm text-gray-500 uppercase tracking-wider mb-2">LGU Profile</p>
-                                        <p class="mb-1"><span class="font-bold text-gray-800">Region:</span> ${lgu.region || '-'}</p>
-                                        <p><span class="font-bold text-gray-800">Province:</span> ${lgu.province || '-'}</p>
+                                        <p class="text-sm text-gray-500 uppercase tracking-wider mb-2">Organization Profile</p>
+                                        <p class="mb-1"><span class="font-bold text-gray-800">Region:</span> ${organization.region || '-'}</p>
+                                        <p><span class="font-bold text-gray-800">Province:</span> ${organization.province || '-'}</p>
                                     </div>
                                     <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
                                         <p class="text-sm text-gray-500 uppercase tracking-wider mb-2">Contact Info</p>
-                                        <p class="mb-1"><span class="font-bold text-gray-800">Head of LGU:</span> ${lgu.head_of_lgu || '-'}</p>
-                                        <p><span class="font-bold text-gray-800">Email:</span> ${lgu.email || '-'}</p>
+                                        <p class="mb-1"><span class="font-bold text-gray-800">Head of Organization:</span> ${organization.head_of_organization || '-'}</p>
+                                        <p><span class="font-bold text-gray-800">Email:</span> ${organization.email || '-'}</p>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-6">
@@ -340,20 +340,20 @@ export async function renderReporting() {
                                 <p class="text-md text-gray-600 mb-8 italic">A summary of the registered government-owned buildings and vehicle fleet covered by this report.</p>
                                 <div class="grid grid-cols-2 gap-8">
                                     <div>
-                                        <h4 class="font-bold text-sm mb-2">Buildings (${lguBuildings.length})</h4>
+                                        <h4 class="font-bold text-sm mb-2">Buildings (${organizationBuildings.length})</h4>
                                         <ul class="list-disc list-inside text-sm text-gray-700">
-                                            ${lguBuildings.slice(0, 5).map(b => `<li>${b.name} <span class="text-xs text-gray-500">(${b.fsbd_type})</span></li>`).join('')}
-                                            ${lguBuildings.length > 5 ? `<li class="italic text-gray-500">...and ${lguBuildings.length - 5} more</li>` : ''}
+                                            ${organizationBuildings.slice(0, 5).map(b => `<li>${b.name} <span class="text-xs text-gray-500">(${b.fsbd_type})</span></li>`).join('')}
+                                            ${organizationBuildings.length > 5 ? `<li class="italic text-gray-500">...and ${organizationBuildings.length - 5} more</li>` : ''}
                                         </ul>
                                     </div>
                                     <div>
-                                        <h4 class="font-bold text-sm mb-2">Vehicles (${lguVehicles.length})</h4>
+                                        <h4 class="font-bold text-sm mb-2">Vehicles (${organizationVehicles.length})</h4>
                                         <ul class="list-disc list-inside text-sm text-gray-700">
-                                            ${lguVehicles.slice(0, 5).map(v => {
+                                            ${organizationVehicles.slice(0, 5).map(v => {
                                                 const vLabel = [v.make, v.model].filter(m => m && m.toLowerCase() !== 'make' && m.toLowerCase() !== 'model').join(' ');
                                                 return `<li>${v.plate_number} <span class="text-xs text-gray-500">${vLabel ? `(${vLabel})` : ''}</span></li>`;
                                             }).join('')}
-                                            ${lguVehicles.length > 5 ? `<li class="italic text-gray-500">...and ${lguVehicles.length - 5} more</li>` : ''}
+                                            ${organizationVehicles.length > 5 ? `<li class="italic text-gray-500">...and ${organizationVehicles.length - 5} more</li>` : ''}
                                         </ul>
                                     </div>
                                 </div>
@@ -392,7 +392,7 @@ export async function renderReporting() {
                             <div class="mb-12 pt-8 break-after-page" style="page-break-after: always;">
                                 <h4 class="font-bold text-xl text-indigo-800 mb-2 border-b pb-2">3.1 Detailed Electricity Reports</h4>
                                 <p class="text-sm text-gray-600 mb-6 italic">Breakdown of electricity consumption (kWh) by building across the reporting period.</p>
-                                ${lguBuildings.map(b => {
+                                ${organizationBuildings.map(b => {
                                     const reports = mecrByBuilding[b.id] || [];
                                     if (reports.length === 0) return '';
                                     // Sort by date
@@ -459,7 +459,7 @@ export async function renderReporting() {
                             <div class="mb-12 pt-8 break-after-page" style="page-break-after: always;">
                                 <h4 class="font-bold text-xl text-teal-800 mb-2 border-b pb-2">3.2 Detailed Fuel Reports</h4>
                                 <p class="text-sm text-gray-600 mb-6 italic">Breakdown of fuel consumption (Liters) by vehicle across the reporting period.</p>
-                                ${lguVehicles.map(v => {
+                                ${organizationVehicles.map(v => {
                                     const reports = mfcrByVehicle[v.id] || [];
                                     if (reports.length === 0) return '';
                                     reports.sort((x, y) => (x.reporting_year - y.reporting_year) || (x.reporting_month - y.reporting_month));
@@ -561,8 +561,8 @@ export async function renderReporting() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        ${lguSeus.map(s => {
-                                            const asset = s.fsbdId ? lguBuildings.find(b => b.id === s.fsbdId) : lguVehicles.find(v => v.id === s.vehicleId);
+                                        ${organizationSeus.map(s => {
+                                            const asset = s.fsbdId ? organizationBuildings.find(b => b.id === s.fsbdId) : organizationVehicles.find(v => v.id === s.vehicleId);
                                             const assetName = asset ? (asset.name || asset.plate_number) : 'Unknown Asset';
                                             return `
                                             <tr class="border-b border-gray-200">
@@ -624,7 +624,7 @@ export async function renderReporting() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            ${lguRios.map(r => `
+                                            ${organizationRios.map(r => `
                                                 <tr class="border-b border-gray-200">
                                                     <td class="py-1">${r.proposed_action}</td>
                                                     <td class="py-1"><span class="text-xs px-2 py-0.5 rounded ${r.priority==='High'?'bg-red-100':(r.priority==='Medium'?'bg-yellow-100':'bg-blue-100')}">${r.priority}</span></td>
@@ -649,7 +649,7 @@ export async function renderReporting() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            ${lguPpas.map(p => `
+                                            ${organizationPpas.map(p => `
                                                 <tr class="border-b border-gray-200">
                                                     <td class="py-1">${p.project_name}</td>
                                                     <td class="py-1 text-xs">${p.status}</td>

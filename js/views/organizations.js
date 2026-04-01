@@ -1,8 +1,8 @@
-import { initLguSelector } from '../app.js';
+import { initOrganizationSelector } from '../app.js';
 import { checkPermission } from './state.js';
 
 // --- Module-level state for search, sort, and data ---
-let fullLguList = [];
+let fullOrganizationList = [];
 let currentSort = { column: 'name', direction: 'asc' };
 let currentSearchTerm = '';
 
@@ -10,15 +10,15 @@ let currentSearchTerm = '';
  * Filters and sorts the full list based on current state.
  */
 function getProcessedList() {
-    let processedList = fullLguList;
+    let processedList = fullOrganizationList;
 
     // 1. Filter by search term
     if (currentSearchTerm) {
         const lowercasedTerm = currentSearchTerm.toLowerCase();
-        processedList = fullLguList.filter(lgu => 
-            (lgu.name || '').toLowerCase().includes(lowercasedTerm) ||
-            (lgu.region || '').toLowerCase().includes(lowercasedTerm) ||
-            (lgu.province || '').toLowerCase().includes(lowercasedTerm)
+        processedList = fullOrganizationList.filter(organization => 
+            (organization.name || '').toLowerCase().includes(lowercasedTerm) ||
+            (organization.region || '').toLowerCase().includes(lowercasedTerm) ||
+            (organization.province || '').toLowerCase().includes(lowercasedTerm)
         );
     }
 
@@ -47,27 +47,27 @@ function getProcessedList() {
 }
 
 /**
- * Renders the LGU table based on the current state.
+ * Renders the Organization table based on the current state.
  */
-function renderLguTable() {
-    const tableBody = document.getElementById('lgu-table-body');
+function renderOrganizationTable() {
+    const tableBody = document.getElementById('organization-table-body');
     if (!tableBody) return;
 
     const processedList = getProcessedList();
 
     if (processedList.length > 0) {
-        tableBody.innerHTML = processedList.map(lgu => `
+        tableBody.innerHTML = processedList.map(organization => `
             <tr>
-                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${lgu.name}</td>
-                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${lgu.region || ''}</td>
-                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${lgu.province || ''}</td>
+                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${organization.name}</td>
+                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${organization.region || ''}</td>
+                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">${organization.province || ''}</td>
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <a href="#/lgus/edit/${lgu.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
+                    <a href="#/organizations/edit/${organization.id}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</a>
                 </td>
             </tr>
         `).join('');
     } else {
-        tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4">${currentSearchTerm ? 'No LGUs match your search.' : 'No LGUs found. Add one!'}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4">${currentSearchTerm ? 'No Organizations match your search.' : 'No Organizations found. Add one!'}</td></tr>`;
     }
 
     // Update sort indicators
@@ -83,8 +83,8 @@ function renderLguTable() {
     });
 }
 
-export async function renderLguList() {
-    const tableBody = document.getElementById('lgu-table-body');
+export async function renderOrganizationList() {
+    const tableBody = document.getElementById('organization-table-body');
     if (!tableBody) return;
 
     // Reset state for this view
@@ -94,18 +94,18 @@ export async function renderLguList() {
     // Initial loading state
     tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4">Loading...</td></tr>';
             
-    fullLguList = await window.getLguList();
+    fullOrganizationList = await window.getOrganizationList();
     
     // Initial render
-    renderLguTable();
+    renderOrganizationTable();
 
     // Setup search listener
-    const searchInput = document.getElementById('lgu-search');
+    const searchInput = document.getElementById('organization-search');
     if (searchInput) {
         searchInput.value = ''; // Clear on load
         searchInput.addEventListener('input', (e) => {
             currentSearchTerm = e.target.value;
-            renderLguTable();
+            renderOrganizationTable();
         });
     }
 
@@ -119,24 +119,24 @@ export async function renderLguList() {
                 currentSort.column = column;
                 currentSort.direction = 'asc';
             }
-            renderLguTable();
+            renderOrganizationTable();
         });
     });
 }
         
-export async function initLguForm(docId = null) {
-                const form = document.getElementById('lgu-form');
+export async function initOrganizationForm(docId = null) {
+                const form = document.getElementById('organization-form');
                 if (!form) return;
                 
                 const title = document.getElementById('form-title');
-                const idField = document.getElementById('lgu-id');
+                const idField = document.getElementById('organization-id');
                 const nameField = document.getElementById('name');
                 const regionField = document.getElementById('region');
                 const provinceField = document.getElementById('province');
         
         if (docId) {
-            title.textContent = 'Edit LGU';
-            const data = await window.getLguById(docId);
+            title.textContent = 'Edit Organization';
+            const data = await window.getOrganizationById(docId);
             if (data) {
                 idField.value = data.id;
                 nameField.value = data.name || '';
@@ -145,8 +145,8 @@ export async function initLguForm(docId = null) {
             }
         }
 
-        // Read-only check - Only System Admins can manage LGUs
-        if (!checkPermission('lgus', 'write')) {
+        // Read-only check - Only System Admins can manage Organizations
+        if (!checkPermission('organizations', 'write')) {
             form.querySelectorAll('input, select, textarea').forEach(el => el.disabled = true);
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.classList.add('hidden');
@@ -154,7 +154,7 @@ export async function initLguForm(docId = null) {
             // Add a notice
             const notice = document.createElement('div');
             notice.className = 'bg-amber-50 border border-amber-200 text-amber-700 p-4 mb-6 rounded-lg text-sm';
-            notice.innerHTML = '<strong>Read-Only Mode:</strong> LGU management is restricted to System Administrators.';
+            notice.innerHTML = '<strong>Read-Only Mode:</strong> Organization management is restricted to System Administrators.';
             form.prepend(notice);
             return; // Don't attach submit listener
         }
@@ -170,16 +170,16 @@ export async function initLguForm(docId = null) {
                     const id = idField.value;
                     let success = false;
                     if (id) {
-                success = await window.updateLgu(id, formData);
+                success = await window.updateOrganization(id, formData);
                     } else {
-                success = await window.createLgu(formData);
+                success = await window.createOrganization(formData);
                     }
         
                     if (success) {
-                        await initLguSelector(); // Refresh the navbar selector
-                        location.hash = '#/lgus';
+                        await initOrganizationSelector(); // Refresh the navbar selector
+                        location.hash = '#/organizations';
                     } else {
-                        alert('There was an error saving the LGU.');
+                        alert('There was an error saving the Organization.');
                     }
                 });
 }

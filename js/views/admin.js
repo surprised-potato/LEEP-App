@@ -1,5 +1,5 @@
-import { initLguSelector } from '../app.js';
-import { populateLguSelector } from './ui.js';
+import { initOrganizationSelector } from '../app.js';
+import { populateOrganizationSelector } from './ui.js';
 import { checkPermission } from './state.js';
 
 const modules = [
@@ -13,14 +13,14 @@ const modules = [
     { id: 'ppas', name: 'Projects (PPA)' },
     { id: 'reporting', name: 'Compliance Report' },
     { id: 'users', name: 'Users' },
-    { id: 'lgus', name: 'LGUs' },
+    { id: 'organizations', name: 'Organizations' },
     { id: 'admin', name: 'Admin Panel' }
 ];
 
 export async function renderAdmin() {
                 // Fetch all data
-                const [lgus, fsbds, vehicles, made, mecr, mfcr, rios, ppas, users] = await Promise.all([
-            window.getLguList(), window.getFsbdList(), window.getVehicleList(), window.getMadeList(),
+                const [organizations, fsbds, vehicles, made, mecr, mfcr, rios, ppas, users] = await Promise.all([
+            window.getOrganizationList(), window.getFsbdList(), window.getVehicleList(), window.getMadeList(),
             window.getMecrReports(), window.getTripTickets(),
             window.getRioList(), window.getPpaList(),
             window.getUserList()
@@ -43,7 +43,7 @@ export async function renderAdmin() {
                                     btnSample.textContent = 'Deleting...';
                                     await window.deleteSampleData();
                                     if(window.showToast) window.showToast('Sample Data Deleted successfully', 'success');
-                                    await initLguSelector(); // Refresh selector
+                                    await initOrganizationSelector(); // Refresh selector
                                     await renderAdmin(); // Refresh view
                                 }
                             };
@@ -55,7 +55,7 @@ export async function renderAdmin() {
                                 btnSample.textContent = 'Generating...';
                                 await window.createSampleData();
                                 if(window.showToast) window.showToast('Sample Data Generated Successfully');
-                                await initLguSelector(); // Refresh selector
+                                await initOrganizationSelector(); // Refresh selector
                                 await renderAdmin(); // Refresh view
                             };
                         }
@@ -67,7 +67,7 @@ export async function renderAdmin() {
                 let currentSearchQuery = '';
                 let currentPage = 1;
                 const ITEMS_PER_PAGE = 50;
-                let currentActiveTabId = 'content-lgus';
+                let currentActiveTabId = 'content-organizations';
 
                 const searchInput = document.getElementById('admin-search-input');
                 const btnPrev = document.getElementById('btn-prev-page');
@@ -77,21 +77,21 @@ export async function renderAdmin() {
                 const itemCount = document.getElementById('admin-item-count');
 
                 // Create Maps for Parent Lookup
-                const lguMap = (lgus || []).reduce((acc, i) => ({...acc, [i.id]: i.name}), {});
+                const organizationMap = (organizations || []).reduce((acc, i) => ({...acc, [i.id]: i.name}), {});
                 const fsbdMap = (fsbds || []).reduce((acc, i) => ({...acc, [i.id]: i.name}), {});
                 const vehicleMap = (vehicles || []).reduce((acc, i) => ({...acc, [i.id]: i.plate_number}), {});
 
                 // Define tables centrally to allow dynamic re-rendering
                 const tableDefs = {
-                    'content-lgus': { tableId: 'table-lgus', moduleId: 'lgus', items: lgus, nameFn: i => i.name, parentFn: () => 'N/A', editHash: '#/lgus/edit', deleteFn: window.deleteLgu },
-                    'content-fsbds': { tableId: 'table-fsbds', moduleId: 'fsbds', items: fsbds, nameFn: i => i.name, parentFn: i => lguMap[i.lguId] || 'Unknown LGU', editHash: '#/fsbds/edit', deleteFn: window.deleteFsbd },
-                    'content-vehicles': { tableId: 'table-vehicles', moduleId: 'vehicles', items: vehicles, nameFn: i => i.plate_number, parentFn: i => lguMap[i.lguId] || 'Unknown LGU', editHash: '#/vehicles/edit', deleteFn: window.deleteVehicle },
+                    'content-organizations': { tableId: 'table-organizations', moduleId: 'organizations', items: organizations, nameFn: i => i.name, parentFn: () => 'N/A', editHash: '#/organizations/edit', deleteFn: window.deleteOrganization },
+                    'content-fsbds': { tableId: 'table-fsbds', moduleId: 'fsbds', items: fsbds, nameFn: i => i.name, parentFn: i => organizationMap[i.organizationId] || 'Unknown Organization', editHash: '#/fsbds/edit', deleteFn: window.deleteFsbd },
+                    'content-vehicles': { tableId: 'table-vehicles', moduleId: 'vehicles', items: vehicles, nameFn: i => i.plate_number, parentFn: i => organizationMap[i.organizationId] || 'Unknown Organization', editHash: '#/vehicles/edit', deleteFn: window.deleteVehicle },
                     'content-made': { tableId: 'table-made', moduleId: 'made', items: made, nameFn: i => i.description_of_equipment, parentFn: i => fsbdMap[i.fsbdId] || 'Unknown Building', editHash: '#/made/edit', deleteFn: window.deleteMade },
                     'content-mecr': { tableId: 'table-mecr', moduleId: 'consumption', items: mecr, nameFn: i => `${i.reporting_year}-${i.reporting_month}`, parentFn: i => fsbdMap[i.fsbdId] || 'Unknown', editHash: '#/consumption', deleteFn: window.deleteMecrReport },
                     'content-trip-tickets': { tableId: 'table-trip-tickets', moduleId: 'consumption', items: mfcr, nameFn: i => `${i.date} - ${i.driver}`, parentFn: i => vehicleMap[i.vehicleId] || 'Unknown', editHash: '#/consumption', deleteFn: window.deleteTripTicket },
                     'content-rios': { tableId: 'table-rios', moduleId: 'rios', items: rios, nameFn: i => i.proposed_action, parentFn: i => fsbdMap[i.fsbdId] || vehicleMap[i.vehicleId] || 'Unknown Asset', editHash: '#/rios/edit', deleteFn: window.deleteRio },
                     'content-ppas': { tableId: 'table-ppas', moduleId: 'ppas', items: ppas, nameFn: i => i.project_name, parentFn: () => 'N/A', editHash: '#/ppas/edit', deleteFn: window.deletePpa },
-                    'content-users': { tableId: 'table-users', moduleId: 'users', items: users, nameFn: i => `${i.displayName || 'Unknown'} (${i.email})`, parentFn: i => lguMap[i.assignedLguId] || 'None / Pending', editHash: '#/users', deleteFn: () => false },
+                    'content-users': { tableId: 'table-users', moduleId: 'users', items: users, nameFn: i => `${i.displayName || 'Unknown'} (${i.email})`, parentFn: i => organizationMap[i.assignedOrganizationId] || 'None / Pending', editHash: '#/users', deleteFn: () => false },
                 };
 
                 const renderActiveTable = () => {
@@ -234,9 +234,9 @@ export async function renderAdmin() {
                 }
 
                 // Initial Render Base view
-                const initialTabsElements = ['content-lgus','content-fsbds','content-vehicles','content-made','content-mecr','content-trip-tickets','content-rios','content-ppas','content-users'];
+                const initialTabsElements = ['content-organizations','content-fsbds','content-vehicles','content-made','content-mecr','content-trip-tickets','content-rios','content-ppas','content-users'];
                 for (const t of initialTabsElements) {
-                    // pre-render all tables hidden so they don't stutter, but keep 'content-lgus' active
+                    // pre-render all tables hidden so they don't stutter, but keep 'content-organizations' active
                     const tempTab = currentActiveTabId;
                     currentActiveTabId = t;
                     renderActiveTable();
@@ -247,15 +247,15 @@ export async function renderAdmin() {
         // --- DEFAULT PERMISSIONS LOGIC ---
         const defaultContainer = document.getElementById('admin-default-modules');
         const defaultPerms = await window.getDefaultPermissions();
-        const defaultLguSelector = document.getElementById('default-lgu-selector');
+        const defaultOrganizationSelector = document.getElementById('default-organization-selector');
 
-        if (defaultLguSelector) {
-            await populateLguSelector(defaultLguSelector, { 
+        if (defaultOrganizationSelector) {
+            await populateOrganizationSelector(defaultOrganizationSelector, { 
                 includeEmpty: true, 
                 emptyText: 'None (System Wide)',
                 filterByUser: false 
             });
-            defaultLguSelector.value = defaultPerms.defaultLguId || '';
+            defaultOrganizationSelector.value = defaultPerms.defaultOrganizationId || '';
         }
 
         defaultContainer.innerHTML = modules.map(m => {
@@ -279,14 +279,14 @@ export async function renderAdmin() {
             if (!checkPermission('admin', 'write')) {
                 saveBtn.classList.add('hidden');
                 document.querySelectorAll('.default-perm-check').forEach(cb => cb.disabled = true);
-                if (defaultLguSelector) defaultLguSelector.disabled = true;
+                if (defaultOrganizationSelector) defaultOrganizationSelector.disabled = true;
             } else {
                 saveBtn.onclick = async () => {
                     saveBtn.disabled = true;
                     saveBtn.textContent = 'Saving...';
                     
                     const newDefaults = {
-                        defaultLguId: document.getElementById('default-lgu-selector')?.value || null
+                        defaultOrganizationId: document.getElementById('default-organization-selector')?.value || null
                     };
                     document.querySelectorAll('.default-perm-check').forEach(cb => {
                         const mod = cb.dataset.module;

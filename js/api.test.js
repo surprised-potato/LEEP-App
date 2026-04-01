@@ -60,7 +60,7 @@ describe('API Unit Tests', () => {
         jest.clearAllMocks();
     });
 
-    test('getLguList should fetch and map data correctly', async () => {
+    test('getOrganizationList should fetch and map data correctly', async () => {
         // Arrange: Mock the Firestore response
         const mockData = [
             { id: '1', data: () => ({ name: 'Manila' }) },
@@ -69,10 +69,10 @@ describe('API Unit Tests', () => {
         mockCollection.get.mockResolvedValue({ docs: mockData });
 
         // Act
-        const result = await api.getLguList();
+        const result = await api.getOrganizationList();
 
         // Assert
-        expect(window.db.collection).toHaveBeenCalledWith('lgus');
+        expect(window.db.collection).toHaveBeenCalledWith('organizations');
         expect(mockCollection.orderBy).toHaveBeenCalledWith('name');
         expect(result).toEqual([
             { id: '1', name: 'Manila' },
@@ -80,46 +80,46 @@ describe('API Unit Tests', () => {
         ]);
     });
 
-    test('createLgu should add data and return ID', async () => {
+    test('createOrganization should add data and return ID', async () => {
         // Arrange
-        const newLgu = { name: 'Pasig' };
+        const newOrganization = { name: 'Pasig' };
         mockCollection.add.mockResolvedValue({ id: 'new-id-123' });
 
         // Act
-        const result = await api.createLgu(newLgu);
+        const result = await api.createOrganization(newOrganization);
 
         // Assert
-        expect(window.db.collection).toHaveBeenCalledWith('lgus');
-        expect(mockCollection.add).toHaveBeenCalledWith(newLgu);
+        expect(window.db.collection).toHaveBeenCalledWith('organizations');
+        expect(mockCollection.add).toHaveBeenCalledWith(newOrganization);
         expect(result).toBe('new-id-123');
     });
 
-    test('getLguList should return empty array if db throws error', async () => {
+    test('getOrganizationList should return empty array if db throws error', async () => {
         // Arrange
         mockCollection.get.mockRejectedValue(new Error('Connection failed'));
 
         // Act
-        const result = await api.getLguList();
+        const result = await api.getOrganizationList();
 
         // Assert
         expect(result).toEqual([]);
         expect(console.error).toHaveBeenCalled();
     });
 
-    // --- LGU Tests ---
-    test('getLguById should fetch single data', async () => {
-        mockDoc.get.mockResolvedValue({ exists: true, id: 'l1', data: () => ({ name: 'Test' }) });
-        const result = await api.getLguById('l1');
+    // --- Organization Tests ---
+    test('getOrganizationById should fetch single data', async () => {
+        mockDoc.get.mockResolvedValue({ exists: true, id: 'o1', data: () => ({ name: 'Test' }) });
+        const result = await api.getOrganizationById('o1');
         expect(result.name).toBe('Test');
     });
 
-    test('updateLgu should update data', async () => {
-        await api.updateLgu('l1', { name: 'Updated' });
+    test('updateOrganization should update data', async () => {
+        await api.updateOrganization('o1', { name: 'Updated' });
         expect(mockDoc.update).toHaveBeenCalledWith({ name: 'Updated' });
     });
 
-    test('deleteLgu should delete document', async () => {
-        await api.deleteLgu('l1');
+    test('deleteOrganization should delete document', async () => {
+        await api.deleteOrganization('o1');
         expect(mockDoc.delete).toHaveBeenCalled();
     });
 
@@ -148,7 +148,7 @@ describe('API Unit Tests', () => {
 
     test('createTripTicket should add data and return ID', async () => {
         mockCollection.add.mockResolvedValue({ id: 'tt1' });
-        const result = await api.createTripTicket({ date: '2023-03-01', lguId: 'lgu-a', vehicleId: 'veh1' });
+        const result = await api.createTripTicket({ date: '2023-03-01', organizationId: 'organization-a', vehicleId: 'veh1' });
         expect(window.db.collection).toHaveBeenCalledWith('trip_tickets');
         expect(result).toBe('tt1');
     });
@@ -168,35 +168,35 @@ describe('API Unit Tests', () => {
     });
 
     test('updateUserPermissions should update data', async () => {
-        await api.updateUserPermissions('u1', { role: 'Admin', assignedLguId: 'l1' });
+        await api.updateUserPermissions('u1', { role: 'Admin', assignedOrganizationId: 'o1' });
         expect(mockDoc.update).toHaveBeenCalledWith({
             permissions: {
                 role: 'Admin',
-                assignedLguId: 'l1'
+                assignedOrganizationId: 'o1'
             }
         });
     });
 
     test('updateUserRole should succeed for System Admin', async () => {
         window._getCurrentUser.mockReturnValue({ role: 'System Admin' });
-        await api.updateUserRole('u1', { role: 'LGU Admin', permissions: {}, assignedLguId: 'l1' });
+        await api.updateUserRole('u1', { role: 'Organization Admin', permissions: {}, assignedOrganizationId: 'o1' });
         expect(mockDoc.update).toHaveBeenCalledWith({
-            role: 'LGU Admin',
+            role: 'Organization Admin',
             permissions: {},
-            assignedLguId: 'l1'
+            assignedOrganizationId: 'o1'
         });
     });
 
-    test('updateUserRole should block escalation for LGU Admin', async () => {
-        window._getCurrentUser.mockReturnValue({ role: 'LGU Admin', assignedLguId: 'l1' });
-        await expect(api.updateUserRole('u1', { role: 'LGU Admin', permissions: {}, assignedLguId: 'l1' }))
-            .rejects.toThrow(/You cannot assign the role "LGU Admin" as it is equal to or higher than your own level/);
+    test('updateUserRole should block escalation for Organization Admin', async () => {
+        window._getCurrentUser.mockReturnValue({ role: 'Organization Admin', assignedOrganizationId: 'o1' });
+        await expect(api.updateUserRole('u1', { role: 'Organization Admin', permissions: {}, assignedOrganizationId: 'o1' }))
+            .rejects.toThrow(/You cannot assign the role "Organization Admin" as it is equal to or higher than your own level/);
     });
 
-    test('updateUserRole should block different LGU for LGU Admin', async () => {
-        window._getCurrentUser.mockReturnValue({ role: 'LGU Admin', assignedLguId: 'l1' });
-        await expect(api.updateUserRole('u1', { role: 'LGU EEC Officer', permissions: {}, assignedLguId: 'l2' }))
-            .rejects.toThrow(/You can only manage users within your own LGU/);
+    test('updateUserRole should block different Organization for Organization Admin', async () => {
+        window._getCurrentUser.mockReturnValue({ role: 'Organization Admin', assignedOrganizationId: 'o1' });
+        await expect(api.updateUserRole('u1', { role: 'Organization EEC Officer', permissions: {}, assignedOrganizationId: 'o2' }))
+            .rejects.toThrow(/You can only manage users within your own Organization/);
     });
 
     test('getDefaultPermissions should fetch setting', async () => {
@@ -216,43 +216,43 @@ describe('API Unit Tests', () => {
     describe('Security Guard Enforcement', () => {
         test('should throw error if not authenticated', async () => {
             window._getCurrentUser.mockReturnValue(null);
-            await expect(api.createLgu({ name: 'fail' })).rejects.toThrow('Not authenticated');
+            await expect(api.createOrganization({ name: 'fail' })).rejects.toThrow('Not authenticated');
         });
 
         test('should throw error if user is Pending', async () => {
             window._getCurrentUser.mockReturnValue({ role: 'Pending' });
-            await expect(api.createLgu({ name: 'fail' })).rejects.toThrow('Account pending approval');
+            await expect(api.createOrganization({ name: 'fail' })).rejects.toThrow('Account pending approval');
         });
 
         test('should throw error if missing write permission', async () => {
             window._getCurrentUser.mockReturnValue({ role: 'Auditor', permissions: {} });
             window._checkPermission.mockReturnValue(false);
-            await expect(api.createLgu({ name: 'fail' })).rejects.toThrow('Write permission denied for: lgus');
+            await expect(api.createOrganization({ name: 'fail' })).rejects.toThrow('Write permission denied for: organizations');
         });
 
-        test('should block LGU mismatch for restricted roles', async () => {
+        test('should block Organization mismatch for restricted roles', async () => {
             window._getCurrentUser.mockReturnValue({ 
-                role: 'LGU Admin', 
-                assignedLguId: 'lgu-a',
+                role: 'Organization Admin', 
+                assignedOrganizationId: 'organization-a',
                 permissions: { fsbds: { write: true } }
             });
             window._checkPermission.mockReturnValue(true);
             
-            // Try to create building for LGU B
-            await expect(api.createFsbd({ lguId: 'lgu-b', name: 'Other LGU Bldg' }))
-                .rejects.toThrow('Access denied: Cannot write data for a different LGU');
+            // Try to create building for Organization B
+            await expect(api.createFsbd({ organizationId: 'organization-b', name: 'Other Organization Bldg' }))
+                .rejects.toThrow('Access denied: Cannot write data for a different Organization');
         });
 
-        test('should allow LGU match for restricted roles', async () => {
+        test('should allow Organization match for restricted roles', async () => {
             window._getCurrentUser.mockReturnValue({ 
-                role: 'LGU Admin', 
-                assignedLguId: 'lgu-a',
+                role: 'Organization Admin', 
+                assignedOrganizationId: 'organization-a',
                 permissions: { fsbds: { write: true } }
             });
             window._checkPermission.mockReturnValue(true);
             mockCollection.add.mockResolvedValue({ id: 'ok' });
 
-            const result = await api.createFsbd({ lguId: 'lgu-a', name: 'My LGU Bldg' });
+            const result = await api.createFsbd({ organizationId: 'organization-a', name: 'My Organization Bldg' });
             expect(result).toBe('ok');
         });
     });

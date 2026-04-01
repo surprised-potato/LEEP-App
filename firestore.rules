@@ -54,14 +54,14 @@ service cloud.firestore {
       // Additional constraints for non-System Admins:
       // 1. Cannot modify a System Admin's profile
       // 2. Cannot elevate a user to 'System Admin'
-      // 3. Must only assign/manage users in their own LGU
+      // 3. Must only assign/manage users in their own Organization
       allow update: if isAuthenticated() && (
         isSystemAdmin() ||
         (
           isApproved() && getUserData().permissions.get('users', {}).get('write', false) == true
           && resource.data.role != 'System Admin' // Cannot edit an existing System Admin
           && request.resource.data.role != 'System Admin' // Cannot make someone a System Admin
-          && (request.resource.data.assignedLguId == getUserData().assignedLguId || request.resource.data.assignedLguId == null) // Can only assign to their own LGU or clear it
+          && (request.resource.data.assignedOrganizationId == getUserData().assignedOrganizationId || request.resource.data.assignedOrganizationId == null) // Can only assign to their own Organization or clear it
         )
       );
       allow delete: if isSystemAdmin();
@@ -73,10 +73,10 @@ service cloud.firestore {
       allow write: if isSystemAdmin();
     }
 
-    // LGU Management
-    match /lgus/{docId} {
+    // Organization Management
+    match /organizations/{docId} {
       allow read: if isAuthenticated();
-      allow write: if hasModuleWrite('lgus');
+      allow write: if hasModuleWrite('organizations');
     }
 
     // Building Management (FSBD)

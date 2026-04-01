@@ -5,9 +5,9 @@
 // Mock API functions globally
 global.window = global;
 
-window.getLguList = jest.fn().mockResolvedValue([]);
-window.createLgu = jest.fn();
-window.updateLgu = jest.fn();
+window.getOrganizationList = jest.fn().mockResolvedValue([]);
+window.createOrganization = jest.fn();
+window.updateOrganization = jest.fn();
 window.getFsbdList = jest.fn().mockResolvedValue([]);
 window.getVehicleList = jest.fn().mockResolvedValue([]);
 window.getMadeList = jest.fn().mockResolvedValue([]);
@@ -42,11 +42,11 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 // Mock state permissions
 jest.mock('./views/state.js', () => ({
     checkPermission: jest.fn().mockReturnValue(true),
-    getCurrentLguId: jest.fn().mockReturnValue(null),
-    getCurrentUser: jest.fn().mockReturnValue({ role: 'System Admin', assignedLguId: null })
+    getCurrentOrganizationId: jest.fn().mockReturnValue(null),
+    getCurrentUser: jest.fn().mockReturnValue({ role: 'System Admin', assignedOrganizationId: null })
 }));
 
-import { renderLguList, initLguForm } from './views/lgus.js';
+import { renderOrganizationList, initOrganizationForm } from './views/organizations.js';
 import { renderFsbdList } from './views/fsbds.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderVehicleList } from './views/vehicles.js';
@@ -62,24 +62,24 @@ describe('View Logic Tests', () => {
         jest.clearAllMocks();
     });
 
-    test('renderLguList should populate table', async () => {
+    test('renderOrganizationList should populate table', async () => {
         // Setup DOM
         document.body.innerHTML = `
-            <div id="lgu-table-body"></div>
-            <div id="lgu-empty-state" class="hidden"></div>
-            <div id="lgu-loading"></div>
+            <div id="organization-table-body"></div>
+            <div id="organization-empty-state" class="hidden"></div>
+            <div id="organization-loading"></div>
         `;
         
         // Mock Data
-        window.getLguList.mockResolvedValue([
+        window.getOrganizationList.mockResolvedValue([
             { id: '1', name: 'Manila', region: 'NCR' }
         ]);
 
         // Act
-        await renderLguList();
+        await renderOrganizationList();
 
         // Assert
-        const tableBody = document.getElementById('lgu-table-body');
+        const tableBody = document.getElementById('organization-table-body');
         expect(tableBody.innerHTML).toContain('Manila');
         expect(tableBody.innerHTML).toContain('NCR');
     });
@@ -201,27 +201,27 @@ describe('View Logic Tests', () => {
 
     test('renderAdmin should fetch all data', async () => {
         document.body.innerHTML = `
-        <div id="table-lgus"><tbody></tbody></div>
+        <div id="table-organizations"><tbody></tbody></div>
         <div id="table-fsbds"><tbody></tbody></div>
         <div id="admin-user-table-body"></div>
         <div id="admin-default-modules"></div>
         `;
         await renderAdmin();
-        expect(window.getLguList).toHaveBeenCalled();
+        expect(window.getOrganizationList).toHaveBeenCalled();
     });
 
-    test('initLguForm should handle form submission', async () => {
-        // Setup DOM with form elements and the selector (needed by initLguSelector)
+    test('initOrganizationForm should handle form submission', async () => {
+        // Setup DOM with form elements and the selector (needed by initOrganizationSelector)
         document.body.innerHTML = `
-            <form id="lgu-form">
+            <form id="organization-form">
                 <h2 id="form-title"></h2>
-                <input type="hidden" id="lgu-id">
+                <input type="hidden" id="organization-id">
                 <input type="text" id="name" value="Test City">
                 <input type="text" id="region" value="Test Region">
                 <input type="text" id="province" value="Test Province">
                 <button type="submit">Save</button>
             </form>
-            <select id="lgu-selector"></select>
+            <select id="organization-selector"></select>
             <div id="form-error" class="hidden"></div>
             <div id="form-success" class="hidden"></div>
             <div id="submit-btn-text"></div>
@@ -229,14 +229,14 @@ describe('View Logic Tests', () => {
         `;
 
         // Mock successful creation and list fetch
-        window.createLgu.mockResolvedValue('new-id');
-        window.getLguList.mockResolvedValue([]); 
+        window.createOrganization.mockResolvedValue('new-id');
+        window.getOrganizationList.mockResolvedValue([]); 
 
         // Initialize form logic
-        await initLguForm();
+        await initOrganizationForm();
 
         // Simulate submit
-        const form = document.getElementById('lgu-form');
+        const form = document.getElementById('organization-form');
         const event = new Event('submit', { bubbles: true, cancelable: true });
         form.dispatchEvent(event);
 
@@ -244,7 +244,7 @@ describe('View Logic Tests', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
 
         // Assert
-        expect(window.createLgu).toHaveBeenCalledWith({
+        expect(window.createOrganization).toHaveBeenCalledWith({
             name: 'Test City',
             region: 'Test Region',
             province: 'Test Province'

@@ -1,4 +1,4 @@
-import { getCurrentLguId, checkPermission } from './state.js';
+import { getCurrentOrganizationId, checkPermission } from './state.js';
 
 // --- Module-level state for search, sort, and data ---
 let fullMadeList = [];
@@ -120,9 +120,9 @@ export async function renderMadeList() {
         let madeData = await window.getMadeList();
         let buildings = await window.getFsbdList();
 
-                // Filter buildings by LGU, then filter MADE items that belong to those buildings
-        const currentLguId = getCurrentLguId();
-                if (currentLguId) buildings = buildings.filter(b => b.lguId === currentLguId || !b.lguId);
+                // Filter buildings by Organization, then filter MADE items that belong to those buildings
+        const currentOrganizationId = getCurrentOrganizationId();
+                if (currentOrganizationId) buildings = buildings.filter(b => b.organizationId === currentOrganizationId || !b.organizationId);
                 const allowedBuildingIds = new Set(buildings.map(b => b.id));
         fullMadeList = madeData.filter(m => allowedBuildingIds.has(m.fsbdId));
 
@@ -164,11 +164,11 @@ export async function renderMadeList() {
                         const printArea = document.getElementById('print-area');
                         if (!printArea) return;
 
-                        // 1. Get LGU Info
-                        const lgus = await window.getLguList();
-                        const currentLguId = getCurrentLguId();
-                        const currentLgu = lgus.find(l => l.id === currentLguId);
-                        const lguName = currentLgu ? currentLgu.name : 'All LGUs';
+                        // 1. Get Organization Info
+                        const organizations = await window.getOrganizationList();
+                        const currentOrganizationId = getCurrentOrganizationId();
+                        const currentOrganization = organizations.find(l => l.id === currentOrganizationId);
+                        const organizationName = currentOrganization ? currentOrganization.name : 'All Organizations';
                         const generationDate = new Date().toLocaleDateString('en-US', {
                             year: 'numeric', month: 'long', day: 'numeric'
                         });
@@ -202,7 +202,7 @@ export async function renderMadeList() {
                                     <p style="color: #555;">An inventory of major energy-consuming devices.</p>
                                 </div>
                                 <div style="margin-bottom: 1.5rem; font-size: 0.9rem;">
-                                    <p><strong>LGU:</strong> ${lguName}</p>
+                                    <p><strong>Organization:</strong> ${organizationName}</p>
                                     <p><strong>Date Generated:</strong> ${generationDate}</p>
                                 </div>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
@@ -244,9 +244,9 @@ export async function initMadeForm(docId = null) {
         
                 // Populate building dropdown
         const buildings = await window.getFsbdList();
-                // Only show buildings for current LGU in dropdown
-        const currentLguId = getCurrentLguId();
-                const filteredBuildings = currentLguId ? buildings.filter(b => b.lguId === currentLguId) : buildings;
+                // Only show buildings for current Organization in dropdown
+        const currentOrganizationId = getCurrentOrganizationId();
+                const filteredBuildings = currentOrganizationId ? buildings.filter(b => b.organizationId === currentOrganizationId) : buildings;
                 
                 buildingField.innerHTML += filteredBuildings.map(bldg => `<option value="${bldg.id}">${bldg.name}</option>`).join('');
         

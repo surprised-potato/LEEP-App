@@ -1,4 +1,4 @@
-import { getCurrentLguId, checkPermission } from './state.js';
+import { getCurrentOrganizationId, checkPermission } from './state.js';
 
 // --- Module-level state for search, sort, and data ---
 let fullPpaList = [];
@@ -104,10 +104,10 @@ export async function renderPpaList() {
 
     let ppas = await window.getPpaList();
     
-    const currentLguId = getCurrentLguId();
-    if (currentLguId) {
+    const currentOrganizationId = getCurrentOrganizationId();
+    if (currentOrganizationId) {
         let [rios, buildings, vehicles] = await Promise.all([window.getRioList(), window.getFsbdList(), window.getVehicleList()]);
-        const allowedAssetIds = new Set([...buildings.filter(b => b.lguId === currentLguId).map(b => b.id), ...vehicles.filter(v => v.lguId === currentLguId).map(v => v.id)]);
+        const allowedAssetIds = new Set([...buildings.filter(b => b.organizationId === currentOrganizationId).map(b => b.id), ...vehicles.filter(v => v.organizationId === currentOrganizationId).map(v => v.id)]);
         const allowedRioIds = new Set(rios.filter(r => allowedAssetIds.has(r.fsbdId) || allowedAssetIds.has(r.vehicleId)).map(r => r.id));
         
         fullPpaList = ppas.filter(ppa => ppa.relatedRioIds && ppa.relatedRioIds.some(id => allowedRioIds.has(id)));
@@ -156,11 +156,11 @@ export async function initPpaForm(docId = null) {
 
                 // Populate RIOs dropdown
         let rios = await window.getRioList();
-        const currentLguId = getCurrentLguId();
-                if (currentLguId) {
+        const currentOrganizationId = getCurrentOrganizationId();
+                if (currentOrganizationId) {
                     // Filter RIOs for dropdown
             const [buildings, vehicles] = await Promise.all([window.getFsbdList(), window.getVehicleList()]);
-                    const allowedAssetIds = new Set([...buildings.filter(b => b.lguId === currentLguId).map(b => b.id), ...vehicles.filter(v => v.lguId === currentLguId).map(v => v.id)]);
+                    const allowedAssetIds = new Set([...buildings.filter(b => b.organizationId === currentOrganizationId).map(b => b.id), ...vehicles.filter(v => v.organizationId === currentOrganizationId).map(v => v.id)]);
                     rios = rios.filter(r => allowedAssetIds.has(r.fsbdId) || allowedAssetIds.has(r.vehicleId));
                 }
 

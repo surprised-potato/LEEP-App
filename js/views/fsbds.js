@@ -1,4 +1,4 @@
-import { getCurrentLguId, checkPermission } from './state.js';
+import { getCurrentOrganizationId, checkPermission } from './state.js';
 
 // --- Module-level state for search, sort, and data ---
 let fullFsbdList = [];
@@ -104,10 +104,10 @@ export async function renderFsbdList() {
     
     let fsbds = await window.getFsbdList();
             
-    // Filter by Current LGU
-    const currentLguId = getCurrentLguId();
-    if (currentLguId) {
-        fullFsbdList = fsbds.filter(f => f.lguId === currentLguId || !f.lguId);
+    // Filter by Current Organization
+    const currentOrganizationId = getCurrentOrganizationId();
+    if (currentOrganizationId) {
+        fullFsbdList = fsbds.filter(f => f.organizationId === currentOrganizationId || !f.organizationId);
     } else {
         fullFsbdList = fsbds;
     }
@@ -187,7 +187,7 @@ export async function initFsbdForm(docId = null) {
                         address: addressField.value,
                         construction_year: yearField.value ? Number(yearField.value) : null,
                         floor_area_sqm: areaField.value ? Number(areaField.value) : null,
-                lguId: getCurrentLguId() // Attach current LGU
+                organizationId: getCurrentOrganizationId() // Attach current Organization
                     };
         
                     const id = idField.value;

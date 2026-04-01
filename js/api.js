@@ -10,13 +10,13 @@ function _requireWrite(module) {
     }
 }
 
-function _requireLguMatch(dataLguId) {
+function _requireOrganizationMatch(dataOrganizationId) {
     const user = window._getCurrentUser ? window._getCurrentUser() : null;
     if (!user) return; 
-    const restrictedRoles = ['LGU Admin', 'LGU EEC Officer', 'LGU Planner'];
-    if (restrictedRoles.includes(user.role) && user.assignedLguId) {
-        if (dataLguId && dataLguId !== user.assignedLguId) {
-            throw new Error('Access denied: Cannot write data for a different LGU');
+    const restrictedRoles = ['Organization Admin', 'Organization EEC Officer', 'Organization Planner'];
+    if (restrictedRoles.includes(user.role) && user.assignedOrganizationId) {
+        if (dataOrganizationId && dataOrganizationId !== user.assignedOrganizationId) {
+            throw new Error('Access denied: Cannot write data for a different Organization');
         }
     }
 }
@@ -61,115 +61,115 @@ function _invalidateCache(cacheKey) {
     }
 }
 
-// --- LGU Functions ---
+// --- Organization Functions ---
 
 /**
- * Fetches the list of all LGUs.
- * @returns {Promise<Array>} A promise that resolves to an array of LGU objects.
+ * Fetches the list of all Organizations.
+ * @returns {Promise<Array>} A promise that resolves to an array of Organization objects.
  */
-async function getLguList() {
+async function getOrganizationList() {
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return [];
     }
     
-    const cacheKey = 'cache_lgus';
+    const cacheKey = 'cache_organizations';
     const cached = _getCachedData(cacheKey);
     if (cached) return cached;
     
     try {
-        const snapshot = await db.collection('lgus').orderBy('name').get();
+        const snapshot = await db.collection('organizations').orderBy('name').get();
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         _setCachedData(cacheKey, data);
         return data;
     } catch (error) {
-        console.error("Error fetching LGU list:", error);
+        console.error("Error fetching Organization list:", error);
         return [];
     }
 }
 
 /**
- * Creates a new LGU document in Firestore.
- * @param {object} data The LGU data to save.
+ * Creates a new Organization document in Firestore.
+ * @param {object} data The Organization data to save.
  * @returns {Promise<string|null>} A promise that resolves to the new document ID or null on error.
  */
-async function createLgu(data) {
-    _requireWrite('lgus');
+async function createOrganization(data) {
+    _requireWrite('organizations');
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
     }
     try {
-        const docRef = await db.collection('lgus').add(data);
-        console.log("Created new LGU with ID:", docRef.id);
-        _invalidateCache('cache_lgus');
+        const docRef = await db.collection('organizations').add(data);
+        console.log("Created new Organization with ID:", docRef.id);
+        _invalidateCache('cache_organizations');
         return docRef.id;
     } catch (error) {
-        console.error("Error creating LGU:", error);
+        console.error("Error creating Organization:", error);
         return null;
     }
 }
 
 /**
- * Updates an existing LGU document in Firestore.
+ * Updates an existing Organization document in Firestore.
  * @param {string} docId The ID of the document to update.
  * @param {object} data The data to update.
  * @returns {Promise<boolean>} A promise that resolves to true on success, false on error.
  */
-async function updateLgu(docId, data) {
-    _requireWrite('lgus');
+async function updateOrganization(docId, data) {
+    _requireWrite('organizations');
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
     }
     try {
-        await db.collection('lgus').doc(docId).update(data);
-        console.log("Updated LGU with ID:", docId);
-        _invalidateCache('cache_lgus');
+        await db.collection('organizations').doc(docId).update(data);
+        console.log("Updated Organization with ID:", docId);
+        _invalidateCache('cache_organizations');
         return true;
     } catch (error) {
-        console.error("Error updating LGU:", error);
+        console.error("Error updating Organization:", error);
         return false;
     }
 }
 
 /**
- * Gets a single LGU document from Firestore.
+ * Gets a single Organization document from Firestore.
  * @param {string} docId The ID of the document to fetch.
  * @returns {Promise<object|null>} A promise that resolves to the document data or null if not found.
  */
-async function getLguById(docId) {
+async function getOrganizationById(docId) {
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
     }
     try {
-        const doc = await db.collection('lgus').doc(docId).get();
+        const doc = await db.collection('organizations').doc(docId).get();
         if (doc.exists) {
             return { id: doc.id, ...doc.data() };
         } else {
-            console.error("No such LGU document!");
+            console.error("No such Organization document!");
             return null;
         }
     } catch (error) {
-        console.error("Error getting LGU document:", error);
+        console.error("Error getting Organization document:", error);
         return null;
     }
 }
 
 /**
- * Deletes an LGU document.
+ * Deletes an Organization document.
  * @param {string} docId 
  */
-async function deleteLgu(docId) {
-    _requireWrite('lgus');
+async function deleteOrganization(docId) {
+    _requireWrite('organizations');
     if (!window.db) return false;
     try {
-        await db.collection('lgus').doc(docId).delete();
-        _invalidateCache('cache_lgus');
+        await db.collection('organizations').doc(docId).delete();
+        _invalidateCache('cache_organizations');
         return true;
     } catch (error) {
-        console.error("Error deleting LGU:", error);
+        console.error("Error deleting Organization:", error);
         return false;
     }
 }
@@ -207,7 +207,7 @@ async function getFsbdList() {
  */
 async function createFsbd(data) {
     _requireWrite('fsbds');
-    _requireLguMatch(data.lguId);
+    _requireOrganizationMatch(data.organizationId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -231,7 +231,7 @@ async function createFsbd(data) {
  */
 async function updateFsbd(docId, data) {
     _requireWrite('fsbds');
-    _requireLguMatch(data.lguId);
+    _requireOrganizationMatch(data.organizationId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
@@ -323,7 +323,7 @@ async function getVehicleList() {
  */
 async function createVehicle(data) {
     _requireWrite('vehicles');
-    _requireLguMatch(data.lguId);
+    _requireOrganizationMatch(data.organizationId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -347,7 +347,7 @@ async function createVehicle(data) {
  */
 async function updateVehicle(docId, data) {
     _requireWrite('vehicles');
-    _requireLguMatch(data.lguId);
+    _requireOrganizationMatch(data.organizationId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
@@ -439,7 +439,7 @@ async function getMadeList() {
  */
 async function createMade(data) {
     _requireWrite('made');
-    _requireLguMatch(data.lguId);
+    _requireOrganizationMatch(data.organizationId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -463,7 +463,7 @@ async function createMade(data) {
  */
 async function updateMade(docId, data) {
     _requireWrite('made');
-    _requireLguMatch(data.lguId);
+    _requireOrganizationMatch(data.organizationId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return false;
@@ -554,9 +554,9 @@ async function getUserList() {
  * @returns {Promise<boolean>}
  */
 /**
- * Updates a user's role, permissions, and LGU assignment with escalation guards.
+ * Updates a user's role, permissions, and Organization assignment with escalation guards.
  * @param {string} uid Target user ID.
- * @param {object} data { role, permissions, assignedLguId }
+ * @param {object} data { role, permissions, assignedOrganizationId }
  */
 async function updateUserRole(uid, data) {
     _requireWrite('users');
@@ -567,10 +567,10 @@ async function updateUserRole(uid, data) {
         // Hierarchy level checks
         const ROLE_LEVELS = {
             'System Admin': 100,
-            'LGU Admin': 50,
-            'LGU EEC Officer': 20,
+            'Organization Admin': 50,
+            'Organization EEC Officer': 20,
             'Auditor': 20,
-            'LGU Planner': 20,
+            'Organization Planner': 20,
             'Pending': 0
         };
 
@@ -582,9 +582,9 @@ async function updateUserRole(uid, data) {
             throw new Error(`Permission denied: You cannot assign the role "${data.role}" as it is equal to or higher than your own level.`);
         }
 
-        // LGU Scope check
-        if (currentUser.assignedLguId && data.assignedLguId !== currentUser.assignedLguId && data.assignedLguId !== null) {
-            throw new Error('Permission denied: You can only manage users within your own LGU.');
+        // Organization Scope check
+        if (currentUser.assignedOrganizationId && data.assignedOrganizationId !== currentUser.assignedOrganizationId && data.assignedOrganizationId !== null) {
+            throw new Error('Permission denied: You can only manage users within your own Organization.');
         }
 
         // Check if target user is current a System Admin
@@ -604,7 +604,7 @@ async function updateUserRole(uid, data) {
         await db.collection('users').doc(uid).update({ 
             role: data.role,
             permissions: data.permissions,
-            assignedLguId: data.assignedLguId 
+            assignedOrganizationId: data.assignedOrganizationId 
         });
         _invalidateCache('cache_users');
         return true;
@@ -668,32 +668,32 @@ async function updateDefaultPermissions(permissions) {
 // --- Sample Data Management ---
 
 const SAMPLE_DATA = {
-    lgus: [
-        { id: 'sample_lgu_1', name: 'City of Pasig', region: 'NCR', province: 'Metro Manila', date_registered: new Date() },
-        { id: 'sample_lgu_2', name: 'Municipality of Cainta', region: 'Region 4A', province: 'Rizal', date_registered: new Date() },
-        { id: 'sample_lgu_3', name: 'Quezon City', region: 'NCR', province: 'Metro Manila', date_registered: new Date() }
+    organizations: [
+        { id: 'sample_organization_1', name: 'City of Pasig', region: 'NCR', province: 'Metro Manila', date_registered: new Date() },
+        { id: 'sample_organization_2', name: 'Municipality of Cainta', region: 'Region 4A', province: 'Rizal', date_registered: new Date() },
+        { id: 'sample_organization_3', name: 'Quezon City', region: 'NCR', province: 'Metro Manila', date_registered: new Date() }
     ],
     fsbds: [
         // Pasig Assets (Expanded Procedurally Down Below)
         // Cainta Assets (Expanded)
-        { id: 'sample_fsbd_4', lguId: 'sample_lgu_2', name: 'Cainta Municipal Hall', fsbd_type: 'Office Building', address: 'Cainta, Rizal', construction_year: 1985, floor_area_sqm: 3000 },
-        { id: 'sample_fsbd_5', lguId: 'sample_lgu_2', name: 'Cainta Public Market', fsbd_type: 'Market', address: 'Cainta, Rizal', construction_year: 2010, floor_area_sqm: 5000 },
-        { id: 'sample_fsbd_6', lguId: 'sample_lgu_2', name: 'Cainta Elementary School', fsbd_type: 'School', address: 'Sto. Domingo, Cainta', construction_year: 1998, floor_area_sqm: 4500 },
+        { id: 'sample_fsbd_4', organizationId: 'sample_organization_2', name: 'Cainta Municipal Hall', fsbd_type: 'Office Building', address: 'Cainta, Rizal', construction_year: 1985, floor_area_sqm: 3000 },
+        { id: 'sample_fsbd_5', organizationId: 'sample_organization_2', name: 'Cainta Public Market', fsbd_type: 'Market', address: 'Cainta, Rizal', construction_year: 2010, floor_area_sqm: 5000 },
+        { id: 'sample_fsbd_6', organizationId: 'sample_organization_2', name: 'Cainta Elementary School', fsbd_type: 'School', address: 'Sto. Domingo, Cainta', construction_year: 1998, floor_area_sqm: 4500 },
         // Quezon City Assets (New)
-        { id: 'sample_fsbd_7', lguId: 'sample_lgu_3', name: 'Quezon City Hall', fsbd_type: 'Office Building', address: 'Elliptical Road, QC', construction_year: 1970, floor_area_sqm: 25000 },
-        { id: 'sample_fsbd_8', lguId: 'sample_lgu_3', name: 'Quezon City General Hospital', fsbd_type: 'Hospital', address: 'Seminary Rd, QC', construction_year: 1980, floor_area_sqm: 15000 },
-        { id: 'sample_fsbd_9', lguId: 'sample_lgu_3', name: 'Amoranto Sports Complex', fsbd_type: 'Sports Complex', address: 'Roces Ave, QC', construction_year: 1960, floor_area_sqm: 10000 }
+        { id: 'sample_fsbd_7', organizationId: 'sample_organization_3', name: 'Quezon City Hall', fsbd_type: 'Office Building', address: 'Elliptical Road, QC', construction_year: 1970, floor_area_sqm: 25000 },
+        { id: 'sample_fsbd_8', organizationId: 'sample_organization_3', name: 'Quezon City General Hospital', fsbd_type: 'Hospital', address: 'Seminary Rd, QC', construction_year: 1980, floor_area_sqm: 15000 },
+        { id: 'sample_fsbd_9', organizationId: 'sample_organization_3', name: 'Amoranto Sports Complex', fsbd_type: 'Sports Complex', address: 'Roces Ave, QC', construction_year: 1960, floor_area_sqm: 10000 }
     ],
     vehicles: [
         // Pasig Fleet (Expanded Procedurally Down Below)
         // Cainta Fleet (Expanded)
-        { id: 'sample_veh_4', lguId: 'sample_lgu_2', plate_number: 'SDD-4444', make: 'Mitsubishi', model: 'L300', year_model: 2021, fuel_type: 'Diesel' },
-        { id: 'sample_veh_5', lguId: 'sample_lgu_2', plate_number: 'SEE-5555', make: 'Toyota', model: 'Vios', year_model: 2017, fuel_type: 'Gasoline' },
-        { id: 'sample_veh_6', lguId: 'sample_lgu_2', plate_number: 'SFF-6666', make: 'Toyota', model: 'Hiace Ambulance', year_model: 2022, fuel_type: 'Diesel' },
+        { id: 'sample_veh_4', organizationId: 'sample_organization_2', plate_number: 'SDD-4444', make: 'Mitsubishi', model: 'L300', year_model: 2021, fuel_type: 'Diesel' },
+        { id: 'sample_veh_5', organizationId: 'sample_organization_2', plate_number: 'SEE-5555', make: 'Toyota', model: 'Vios', year_model: 2017, fuel_type: 'Gasoline' },
+        { id: 'sample_veh_6', organizationId: 'sample_organization_2', plate_number: 'SFF-6666', make: 'Toyota', model: 'Hiace Ambulance', year_model: 2022, fuel_type: 'Diesel' },
         // Quezon City Fleet (New)
-        { id: 'sample_veh_7', lguId: 'sample_lgu_3', plate_number: 'SGG-7777', make: 'Hino', model: 'Bus', year_model: 2019, fuel_type: 'Diesel' },
-        { id: 'sample_veh_8', lguId: 'sample_lgu_3', plate_number: 'SHH-8888', make: 'Toyota', model: 'Vios Patrol', year_model: 2020, fuel_type: 'Gasoline' },
-        { id: 'sample_veh_9', lguId: 'sample_lgu_3', plate_number: 'SII-9999', make: 'Isuzu', model: 'Garbage Compactor', year_model: 2018, fuel_type: 'Diesel' }
+        { id: 'sample_veh_7', organizationId: 'sample_organization_3', plate_number: 'SGG-7777', make: 'Hino', model: 'Bus', year_model: 2019, fuel_type: 'Diesel' },
+        { id: 'sample_veh_8', organizationId: 'sample_organization_3', plate_number: 'SHH-8888', make: 'Toyota', model: 'Vios Patrol', year_model: 2020, fuel_type: 'Gasoline' },
+        { id: 'sample_veh_9', organizationId: 'sample_organization_3', plate_number: 'SII-9999', make: 'Isuzu', model: 'Garbage Compactor', year_model: 2018, fuel_type: 'Diesel' }
     ],
     made_equipment: [
         // Pasig (Expanded Procedurally Down Below)
@@ -782,27 +782,27 @@ const SAMPLE_DATA = {
 
 // Procedurally generate extensive data for Pasig City to showcase dense historical reporting
 function generatePasigData() {
-    const lguId = 'sample_lgu_1';
+    const organizationId = 'sample_organization_1';
     
-    // 1 LGU, 10 Buildings, 20 Vehicles
+    // 1 Organization, 10 Buildings, 20 Vehicles
     const fsbds = [
-        { id: 'sample_fsbd_101', lguId, name: 'Pasig City Hall Main', fsbd_type: 'Office Building', address: 'Caruncho Ave, Pasig', construction_year: 1990, floor_area_sqm: 15000 },
-        { id: 'sample_fsbd_102', lguId, name: 'Pasig Sports Center', fsbd_type: 'Sports Complex', address: 'Pasig City', construction_year: 2000, floor_area_sqm: 8000 },
-        { id: 'sample_fsbd_103', lguId, name: 'Pasig General Hospital', fsbd_type: 'Hospital', address: 'Maybunga, Pasig', construction_year: 1995, floor_area_sqm: 12000 },
-        { id: 'sample_fsbd_104', lguId, name: 'Rave Park Administration', fsbd_type: 'Office Building', address: 'Rainforest Park, Pasig', construction_year: 2005, floor_area_sqm: 2000 },
-        { id: 'sample_fsbd_105', lguId, name: 'Pasig Mega Market', fsbd_type: 'Market', address: 'San Nicolas, Pasig', construction_year: 1980, floor_area_sqm: 20000 },
-        { id: 'sample_fsbd_106', lguId, name: 'Rizal High School Main', fsbd_type: 'School', address: 'Caniogan, Pasig', construction_year: 1975, floor_area_sqm: 18000 },
-        { id: 'sample_fsbd_107', lguId, name: 'Pinagbuhatan High School', fsbd_type: 'School', address: 'Pinagbuhatan, Pasig', construction_year: 2010, floor_area_sqm: 5000 },
-        { id: 'sample_fsbd_108', lguId, name: 'PCGH Extension Annex', fsbd_type: 'Hospital', address: 'Maybunga, Pasig', construction_year: 2018, floor_area_sqm: 4000 },
-        { id: 'sample_fsbd_109', lguId, name: 'Pasig City Science High', fsbd_type: 'School', address: 'Maybunga, Pasig', construction_year: 2008, floor_area_sqm: 6000 },
-        { id: 'sample_fsbd_110', lguId, name: 'City Library and Museum', fsbd_type: 'Office Building', address: 'Plaza Rizal, Pasig', construction_year: 1960, floor_area_sqm: 1500 }
+        { id: 'sample_fsbd_101', organizationId, name: 'Pasig City Hall Main', fsbd_type: 'Office Building', address: 'Caruncho Ave, Pasig', construction_year: 1990, floor_area_sqm: 15000 },
+        { id: 'sample_fsbd_102', organizationId, name: 'Pasig Sports Center', fsbd_type: 'Sports Complex', address: 'Pasig City', construction_year: 2000, floor_area_sqm: 8000 },
+        { id: 'sample_fsbd_103', organizationId, name: 'Pasig General Hospital', fsbd_type: 'Hospital', address: 'Maybunga, Pasig', construction_year: 1995, floor_area_sqm: 12000 },
+        { id: 'sample_fsbd_104', organizationId, name: 'Rave Park Administration', fsbd_type: 'Office Building', address: 'Rainforest Park, Pasig', construction_year: 2005, floor_area_sqm: 2000 },
+        { id: 'sample_fsbd_105', organizationId, name: 'Pasig Mega Market', fsbd_type: 'Market', address: 'San Nicolas, Pasig', construction_year: 1980, floor_area_sqm: 20000 },
+        { id: 'sample_fsbd_106', organizationId, name: 'Rizal High School Main', fsbd_type: 'School', address: 'Caniogan, Pasig', construction_year: 1975, floor_area_sqm: 18000 },
+        { id: 'sample_fsbd_107', organizationId, name: 'Pinagbuhatan High School', fsbd_type: 'School', address: 'Pinagbuhatan, Pasig', construction_year: 2010, floor_area_sqm: 5000 },
+        { id: 'sample_fsbd_108', organizationId, name: 'PCGH Extension Annex', fsbd_type: 'Hospital', address: 'Maybunga, Pasig', construction_year: 2018, floor_area_sqm: 4000 },
+        { id: 'sample_fsbd_109', organizationId, name: 'Pasig City Science High', fsbd_type: 'School', address: 'Maybunga, Pasig', construction_year: 2008, floor_area_sqm: 6000 },
+        { id: 'sample_fsbd_110', organizationId, name: 'City Library and Museum', fsbd_type: 'Office Building', address: 'Plaza Rizal, Pasig', construction_year: 1960, floor_area_sqm: 1500 }
     ];
 
     const vehicles = [];
     for(let i=1; i<=20; i++) {
         vehicles.push({
             id: `sample_veh_10${i}`,
-            lguId,
+            organizationId,
             plate_number: `PAS-${1000+i}`,
             make: i % 3 === 0 ? 'Toyota' : (i % 2 === 0 ? 'Mitsubishi' : 'Isuzu'),
             model: i % 3 === 0 ? 'Innova' : (i % 2 === 0 ? 'L300' : 'Garbage Truck'),
@@ -905,7 +905,7 @@ SAMPLE_DATA.trip_tickets.push(...generated.trip_tickets);
 async function checkSampleDataExists() {
     if (!window.db) return false;
     try {
-        const doc = await db.collection('lgus').doc('sample_lgu_1').get();
+        const doc = await db.collection('organizations').doc('sample_organization_1').get();
         return doc.exists;
     } catch (error) {
         console.error("Error checking sample data:", error);
@@ -1024,7 +1024,7 @@ async function getSeuList() {
  */
 async function createSeu(data) {
     _requireWrite('seu');
-    _requireLguMatch(data.lguId);
+    _requireOrganizationMatch(data.organizationId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -1060,7 +1060,7 @@ async function deleteSeu(docId) {
 // Export for Node.js testing environment
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
-        getLguList, createLgu, updateLgu, getLguById, deleteLgu,
+        getOrganizationList, createOrganization, updateOrganization, getOrganizationById, deleteOrganization,
         getFsbdList, createFsbd, updateFsbd, getFsbdById, deleteFsbd,
         getVehicleList, createVehicle, updateVehicle, getVehicleById, deleteVehicle,
         getMadeList, createMade, updateMade, getMadeById, deleteMade,
@@ -1118,9 +1118,9 @@ async function getMecrReports(fsbdId = null) {
  */
 async function createMecrReport(data) {
     _requireWrite('consumption');
-    // Note: MECR/MFCR require deeper LGU validation via the parent asset (FSBD/Vehicle)
-    // For now, we validate if the report object itself has an lguId if provided.
-    _requireLguMatch(data.lguId);
+    // Note: MECR/MFCR require deeper Organization validation via the parent asset (FSBD/Vehicle)
+    // For now, we validate if the report object itself has an organizationId if provided.
+    _requireOrganizationMatch(data.organizationId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -1208,7 +1208,7 @@ async function getTripTickets(vehicleId = null) {
  */
 async function createTripTicket(data) {
     _requireWrite('consumption');
-    _requireLguMatch(data.lguId);
+    _requireOrganizationMatch(data.organizationId);
     if (!window.db) {
         console.error("Firestore is not initialized.");
         return null;

@@ -19,17 +19,17 @@ export function applyHeroHeader(container) {
 export function updateSidebarVisibility() {
     const user = getCurrentUser();
     const navLinks = document.querySelectorAll('aside nav a');
-    const lguSelector = document.getElementById('lgu-selector');
+    const organizationSelector = document.getElementById('organization-selector');
 
-    // Handle LGU selector restriction
-    if (lguSelector) {
-        const lguRestrictedRoles = ['LGU Admin', 'LGU EEC Officer', 'LGU Planner'];
-        const isRestricted = user && lguRestrictedRoles.includes(user.role) && user.assignedLguId;
-        lguSelector.disabled = isRestricted;
-        if (isRestricted && lguSelector.value !== user.assignedLguId) {
-            lguSelector.value = user.assignedLguId;
+    // Handle Organization selector restriction
+    if (organizationSelector) {
+        const organizationRestrictedRoles = ['Organization Admin', 'Organization EEC Officer', 'Organization Planner'];
+        const isRestricted = user && organizationRestrictedRoles.includes(user.role) && user.assignedOrganizationId;
+        organizationSelector.disabled = isRestricted;
+        if (isRestricted && organizationSelector.value !== user.assignedOrganizationId) {
+            organizationSelector.value = user.assignedOrganizationId;
             // Trigger change event if needed
-            lguSelector.dispatchEvent(new Event('change'));
+            organizationSelector.dispatchEvent(new Event('change'));
         }
     }
 
@@ -398,30 +398,30 @@ export function initManualAccordion() {
 }
 
 /**
- * Populates a select element with LGUs from the database.
+ * Populates a select element with Organizations from the database.
  * @param {HTMLSelectElement} selector 
  * @param {Object} options 
- * @returns {Promise<Array>} The list of LGUs
+ * @returns {Promise<Array>} The list of Organizations
  */
-export async function populateLguSelector(selector, options = {}) {
+export async function populateOrganizationSelector(selector, options = {}) {
     const { 
         includeEmpty = true, 
-        emptyText = 'Select LGU', 
+        emptyText = 'Select Organization', 
         emptyValue = '',
         additionalOptions = [],
         filterByUser = true
     } = options;
 
-    let lgus = await window.getLguList();
+    let organizations = await window.getOrganizationList();
     
     if (filterByUser) {
         const user = getCurrentUser();
-        if (user && user.assignedLguId) {
-            lgus = lgus.filter(l => l.id === user.assignedLguId);
+        if (user && user.assignedOrganizationId) {
+            organizations = organizations.filter(l => l.id === user.assignedOrganizationId);
         }
     }
 
-    if (!selector) return lgus;
+    if (!selector) return organizations;
     
     let html = includeEmpty ? `<option value="${emptyValue}">${emptyText}</option>` : '';
     
@@ -429,7 +429,7 @@ export async function populateLguSelector(selector, options = {}) {
         html += additionalOptions.map(opt => `<option value="${opt.value}">${opt.text}</option>`).join('');
     }
     
-    html += lgus.map(lgu => `<option value="${lgu.id}">${lgu.name}</option>`).join('');
+    html += organizations.map(organization => `<option value="${organization.id}">${organization.name}</option>`).join('');
     selector.innerHTML = html;
-    return lgus;
+    return organizations;
 }

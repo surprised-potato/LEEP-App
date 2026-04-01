@@ -3,7 +3,7 @@ import { updateSidebarActiveState } from './views/ui.js';
 import { loadContent } from './app.js';
 import { checkPermission } from './views/state.js';
 import { renderDashboard } from './views/dashboard.js';
-import { renderLguList, initLguForm } from './views/lgus.js';
+import { renderOrganizationList, initOrganizationForm } from './views/organizations.js';
 import { renderFsbdList, initFsbdForm } from './views/fsbds.js';
 import { renderVehicleList, initVehicleForm } from './views/vehicles.js';
 import { renderMadeList, initMadeForm } from './views/made.js';
@@ -17,9 +17,9 @@ import { renderUserManagement } from './views/user-management.js';
 
 const routes = {
     '/dashboard': { view: 'views/dashboard.html', controller: renderDashboard },
-    '/lgus': { view: 'views/lgu-list.html', controller: renderLguList },
-    '/lgus/new': { view: 'views/lgu-form.html', controller: initLguForm },
-    '/lgus/edit/:id': { view: 'views/lgu-form.html', controller: initLguForm },
+    '/organizations': { view: 'views/organization-list.html', controller: renderOrganizationList },
+    '/organizations/new': { view: 'views/organization-form.html', controller: initOrganizationForm },
+    '/organizations/edit/:id': { view: 'views/organization-form.html', controller: initOrganizationForm },
     '/fsbds': { view: 'views/fsbd-list.html', controller: renderFsbdList },
     '/fsbds/new': { view: 'views/fsbd-form.html', controller: initFsbdForm },
     '/fsbds/edit/:id': { view: 'views/fsbd-form.html', controller: initFsbdForm },
